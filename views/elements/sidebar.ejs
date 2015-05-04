@@ -1,0 +1,15 @@
+<div class="ui thin left sidebar vertical inverted labeled icon menu" id="sidebar">
+    <a class="<% if (url === undefined) { %>active item<% } else { %>item<% }%>">
+        <i class="home icon"></i>
+        <%= __('Home') %>
+    </a>
+    <a href="/config/eq" class="<% if (url === '/config/eq') { %>active item<% } else { %>item<% }%>">
+        <i class="settings icon"></i>
+        <%= __('Configuration') %>
+    </a>
+    <a href="/config/options" class="<% if (url === '/config/options') { %>active item<% } else { %>item<% }%>">
+        <i class="configure icon"></i>
+        <%= __('Options') %>
+    </a>
+</div>
+
