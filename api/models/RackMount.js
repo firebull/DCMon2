@@ -14,7 +14,9 @@ module.exports = {
             autoIncrement: true,
             unique: true
         },
-    name: 'string',
+    name: { type: 'string',
+            required: true
+          },
     description: 'text',
     datacenter: {
         model: 'datacenter'

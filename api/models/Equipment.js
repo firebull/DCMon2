@@ -14,32 +14,44 @@ module.exports = {
             autoIncrement: true,
             unique: true
         },
-    name: 'string',
+    name: { type: 'string',
+            required: true
+          },
     description: 'text',
     pos_in_rack: 'integer',
     type: {
             type: 'string',
+            required: true,
             enum: ['server', 'store', 'lan']
           },
-    ipmi_address: 'string',
+    ipmi_address: {
+                    type: 'string',
+                    ip: true
+                  },
     snmp_trap: 'string',
     login: 'string',
     password: 'string',
+    monitoring_enable: {
+                         type: 'boolean',
+                         defaultsTo: true
+                        },
     power_state: {
                     type: 'string',
                     enum: ['off', 'on'],
-                    default: 'on'
+                    defaultsTo: 'on'
                  },
     status: {
                 type: 'string',
-                enum: ['ok', 'warn', 'error', 'alert']
+                enum: ['ok', 'warn', 'error', 'alert'],
+                defaultsTo: 'ok'
             },
     configuration: 'json',
     sensors_proto: 'string',
     events_proto: 'string',
     configuration_proto: 'string',
     rackmount: {
-        model: 'rackmount'
+        model: 'rackmount',
+        required: true,
     }
   }
 };

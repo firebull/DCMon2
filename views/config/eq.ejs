@@ -6,9 +6,537 @@
             <div class="sub header"><%= __('Add equipment to monitor') %></div>
         </div>
     </h2>
-    <h3 class="ui dividing header"><%= __('DataCenters') %></h3>
+    <h3 class="ui left floated header"><%= __('DataCenters') %></h3>
+    <button class="ui right floated small orange button" data-bind="event: {click: dcForm.bind(false, false)}">
+        <i class="plus icon"></i>
+        <%= __('New DataCenter') %>
+    </button>
+    <div class="clear"></div>
 
-    <h3 class="ui dividing header"><%= __('RackMounts') %></h3>
+    <table class="ui very basic table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th><%= __('Name/Description') %></th>
+                <th><%= __('Updated') %></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody data-bind="foreach: { data: dcs, as: 'dc'}">
+            <tr>
+                <td data-bind="text: dc.id"></td>
+                <td>
+                    <div class="ui small header">
+                        <div class="content">
+                            <span data-bind="text: dc.name"></span>
+                            <div class="ui sub header" data-bind="text: dc.description"></div>
+                        </div>
+                    </div>
+                </td>
+                <td data-bind="text: moment(dc.updatedAt).format('HH:mm:SS DD.MM.YYYY');"></td>
+                <td>
+                    <button class="ui small red right floated button"><%= __('Delete') %></button>
+                    <button data-bind="event: {click: $root.dcForm.bind(false, $index())}" class="ui small primary right floated button"><%= __('Edit') %></button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
-    <h3 class="ui dividing header"><%= __('Equipment') %></h3>
+    <div class="ui clearing divider"></div>
+    <p></p>
+
+    <h3 class="ui left floated header"><%= __('RackMounts') %></h3>
+    <button class="ui right floated small orange button" data-bind="event: {click: rackForm.bind(false, false)}">
+        <i class="plus icon"></i>
+        <%= __('New RackMount') %>
+    </button>
+    <div class="clear"></div>
+
+    <table class="ui very basic table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th><%= __('DataCenter') %></th>
+                <th><%= __('Name/Description') %></th>
+                <th><%= __('Updated') %></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody data-bind="foreach: { data: racks, as: 'rack'}">
+            <tr>
+                <td data-bind="text: rack.id"></td>
+                <td data-bind="if: rack.datacenter">
+                    <div class="ui label" data-bind="visible: rack.datacenter.id">
+                        #<span data-bind="text: rack.datacenter.id"></span>
+                        "<span data-bind="text: rack.datacenter.name"></span>"
+                    </div>
+                </td>
+                <td>
+                    <div class="ui small header">
+                        <div class="content">
+                            <span data-bind="text: rack.name"></span>
+                            <div class="ui sub header" data-bind="text: rack.description"></div>
+                        </div>
+                    </div>
+                </td>
+                <td data-bind="text: moment(rack.updatedAt).format('HH:mm:SS DD.MM.YYYY');"></td>
+                <td>
+                    <button class="ui small red right floated button"><%= __('Delete') %></button>
+                    <button data-bind="event: {click: $root.rackForm.bind(false, $index())}" class="ui small primary right floated button"><%= __('Edit') %></button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="ui clearing divider"></div>
+    <p></p>
+
+    <h3 class="ui left floated header"><%= __('Equipment') %></h3>
+    <button class="ui right floated small orange button" data-bind="event: {click: eqForm.bind(false, false)}">
+        <i class="plus icon"></i>
+        <%= __('New Equipment') %>
+    </button>
+    <div class="clear"></div>
+
+
+
+    <div class="ui clearing divider"></div>
+    <p></p>
+
+
+
+    <div class="ui small modal" id="eqModal">
+        <i class="close icon"></i>
+        <div class="header"></div>
+        <div class="content" data-bind="if: modalData && modalTemplate">
+            <div class="description" data-bind="template: {data: modalData,
+                                                           name: modalTemplate}"></div>
+        </div>
+        <div class="actions">
+            <div class="ui button"><%= __('Cancel') %></div>
+        </div>
+    </div>
 </div>
+<script type="text/html" id="dc-form">
+    <div class="ui form" data-bind="css: {'error': $root.modalErrors().length > 0}">
+        <!-- ko template: 'form-errors'-->
+        <!-- /ko -->
+        <div class="field">
+            <label><%= __('DataCenter name') %></label>
+            <input type="text" data-bind="value: $root.modalData().name">
+        </div>
+        <div class="field">
+            <label><%= __('DataCenter description') %></label>
+            <textarea data-bind="value: $root.modalData().description"></textarea>
+        </div>
+        <button class="ui primary fluid button" data-bind="event: {click: $root.sendForm.bind(false, 'datacenter')}"><%= __('Send') %></button>
+    </div>
+</script>
+<script type="text/html" id="rack-form">
+    <div class="ui form" data-bind="css: {'error': $root.modalErrors().length > 0}">
+        <!-- ko template: 'form-errors'-->
+        <!-- /ko -->
+        <div class="field">
+            <label><%= __('RackMount name') %></label>
+            <input type="text" data-bind="value: $root.modalData().name">
+        </div>
+        <div class="field">
+            <label><%= __('RackMount description') %></label>
+            <textarea data-bind="value: $root.modalData().description"></textarea>
+        </div>
+        <div class="field">
+            <label><%= __('DataCenter') %></label>
+            <select data-bind="options: $root.dcs(),
+                               optionsText: function(item){ return '#' + item().id + ' ' + item().name},
+                               optionsValue: function(item){ return item().id},
+                               value: $root.modalData().datacenter.id,
+                               optionsCaption: '<%= __('Choose one...') %>'"></select>
+        </div>
+        <button class="ui primary fluid button" data-bind="event: {click: $root.sendForm.bind(false, 'rackmount')}"><%= __('Send') %></button>
+    </div>
+</script>
+<script type="text/html" id="equipment-form">
+    <div class="ui form" data-bind="css: {'error': $root.modalErrors().length > 0}">
+        <!-- ko template: 'form-errors'-->
+        <!-- /ko -->
+        <div class="field">
+            <label><%= __('Equipment name') %></label>
+            <input type="text" data-bind="value: $root.modalData().name">
+        </div>
+        <div class="field">
+            <label><%= __('Equipment description') %></label>
+            <textarea data-bind="value: $root.modalData().description" style="min-height: 1em; max-height: 4em;"></textarea>
+        </div>
+        <div class="field">
+            <label><%= __('Equipment Type') %></label>
+            <select data-bind="options: $root.equipmentTypes,
+                               optionsText: 'longname',
+                               optionsValue: 'name',
+                               value: $root.modalData().type,
+                               optionsCaption: '<%= __('Choose one...') %>'"></select>
+        </div>
+        <div class="field">
+            <label><%= __('IPMI Address') %></label>
+            <input type="text" data-bind="value: $root.modalData().ipmi_address">
+        </div>
+        <div class="field">
+            <label><%= __('SNMP Trap') %></label>
+            <input type="text" data-bind="value: $root.modalData().snmp_trap">
+        </div>
+        <div class="field">
+            <label><%= __('Login') %></label>
+            <input type="text" data-bind="value: $root.modalData().login">
+        </div>
+        <div class="field">
+            <label><%= __('Password') %></label>
+            <input type="password" data-bind="value: $root.modalData().password">
+        </div>
+        <div class="field">
+            <label><%= __('Sensors query protocol') %></label>
+            <select data-bind="options: $root.protocols,
+                               optionsText: 'longname',
+                               optionsValue: 'name',
+                               value: $root.modalData().sensors_proto,
+                               optionsCaption: '<%= __('Choose one...') %>'"></select>
+        </div>
+        <div class="field">
+            <label><%= __('Events query protocol') %></label>
+            <select data-bind="options: $root.protocols,
+                               optionsText: 'longname',
+                               optionsValue: 'name',
+                               value: $root.modalData().events_proto,
+                               optionsCaption: '<%= __('Choose one...') %>'"></select>
+        </div>
+        <div class="field">
+            <label><%= __('Configuration query protocol') %></label>
+            <select data-bind="options: $root.protocols,
+                               optionsText: 'longname',
+                               optionsValue: 'name',
+                               value: $root.modalData().configuration_proto,
+                               optionsCaption: '<%= __('Choose one...') %>'"></select>
+        </div>
+        <div class="field">
+            <label><%= __('Current power state') %></label>
+            <select data-bind="options: $root.powerStates,
+                               optionsText: 'longname',
+                               optionsValue: 'name',
+                               value: $root.modalData().power_state,
+                               optionsCaption: '<%= __('Choose one...') %>'"></select>
+        </div>
+        <div class="field">
+            <label><%= __('Position in Rack') %></label>
+            <input type="number" data-bind="value: $root.modalData().pos_in_rack">
+        </div>
+        <div class="field">
+            <label><%= __('RackMount') %></label>
+            <select data-bind="options: $root.racks(),
+                               optionsText: function(item){ return '#' + item().id + ' ' + item().name},
+                               optionsValue: function(item){ return item().id},
+                               value: $root.modalData().rackmount.id,
+                               optionsCaption: '<%= __('Choose one...') %>'"></select>
+        </div>
+        <div class="inline field">
+            <div class="ui toggle checkbox">
+                <input type="checkbox" data-bind="checked: $root.modalData().monitoring_enable"  id="monitoring_enable_checkbox">
+                <label for="monitoring_enable_checkbox"><%= __('Enable monitoring of this equipment') %></label>
+            </div>
+        </div>
+        <button class="ui primary fluid button" data-bind="event: {click: $root.sendForm.bind(false, 'equipment')}"><%= __('Send') %></button>
+    </div>
+</script>
+<script type="text/html" id="form-errors">
+    <div class="ui error message">
+        <div class="header"><%= __('Error occured while request') %></div>
+        <ul data-bind="foreach: {data: $root.modalErrors, as: 'error'}">
+            <li data-bind="text: error"></li>
+        </ul>
+    </div>
+</script>
+<script type="text/javascript">
+    var configEqViewModel = function(){
+        var self = this;
+
+        this.errors = ko.observableArray();
+        this.modalErrors = ko.observableArray();
+        this.loading = ko.observable(false);
+        this.modalTemplate = ko.observable(false);
+        this.modalData = ko.observable(false);
+        this.modalDataIndex = ko.observable(false);
+
+        this.dcs   = ko.observableArray();
+        this.racks = ko.observableArray();
+        this.equipments = ko.observableArray();
+
+        this.equipmentTypes = [{name: 'server', longname: "<%= __('Server') %>"},
+                               {name: 'store', longname: "<%= __('Data Store') %>"},
+                               {name: 'lan', longname: "<%= __('Lan') %>"}];
+
+        this.protocols = [{name: "ipmi", longname: "IPMI"},
+                          {name: "ipmiv2", longname: "IPMI v2"},
+                          {name: "ilo_http", longname: "HP iLo HTTP"},
+                          {name: "ilo_raw", longname: "HP iLo RAW"},
+                          {name: "snmp", longname: "SNMP"}];
+
+        this.powerStates = [{name: 'on', longname: "<%= __('Power On') %>"},
+                            {name: 'off', longname: "<%= __('Power Off') %>"}];
+
+        this.dcForm = function(id){
+            var self = this;
+
+            if (id === false){
+                var title = "<%= __('Add new DataCenter') %>";
+                var fields = {name: "", description: ""};
+
+                self.modalData(fields);
+            } else {
+                var title = "<%= __('Update DataCenter') %>";
+
+                self.modalData(self.dcs()[id]());
+                self.modalDataIndex(id);
+            }
+
+            self.showModal('small', title, "dc-form");
+
+        }.bind(this);
+
+        this.rackForm = function(id){
+            var self = this;
+
+            if (id === false){
+                var title = "<%= __('Add new RackMount') %>";
+                var fields = {name: "",
+                              description: "",
+                              datacenter: {id: undefined}};
+
+                self.modalData(fields);
+            } else {
+                var title = "<%= __('Update RackMount') %>";
+
+                self.modalData(self.racks()[id]());
+                self.modalDataIndex(id);
+            }
+
+            self.showModal('small', title, "rack-form");
+
+        }.bind(this);
+
+        this.eqForm = function(id){
+            var self = this;
+
+            if (id === false){
+                var title = "<%= __('Add new Equipment') %>";
+                var fields = {name: "",
+                              description: "",
+                              rackmount: {id: undefined},
+                              pos_in_rack: undefined,
+                              type: 'server',
+                              ipmi_address: '127.0.0.1',
+                              snmp_trap: 'public',
+                              login: undefined,
+                              password: undefined,
+                              power_state: 'off',
+                              monitoring_enable: true,
+                              sensors_proto: 'ipmi',
+                              events_proto: 'ipmi',
+                              configuration_proto: 'ipmi',
+                              };
+
+                self.modalData(fields);
+            } else {
+                var title = "<%= __('Update Equipment') %>";
+
+                self.modalData(self.equipments()[id]());
+                self.modalDataIndex(id);
+            }
+
+            self.showModal('small', title, "equipment-form");
+
+        }.bind(this);
+
+        this.sendForm = function(url){
+            var self = this;
+
+            if (self.modalData() !== false){
+                self.modalErrors([]);
+
+                // Prepare data
+                var dataToSave;
+
+                dataToSave = ko.toJS(self.modalData());
+
+                if (url == 'datacenter'){
+                    dataToSave['racks'] = [];
+                } else if (url == 'rackmount'){
+
+                    delete(dataToSave['equipment']);
+
+                    if (self.modalData().datacenter === undefined){
+                        delete(dataToSave['datacenter']);
+                    } else {
+                        dataToSave['datacenter'] = self.modalData().datacenter.id;
+                    }
+                } else if (url == 'equipment'){
+                    if (self.modalData().datacenter === undefined){
+                        delete(dataToSave['rackmount']);
+                    } else {
+                        dataToSave['rackmount'] = self.modalData().rackmount.id;
+                    }
+                }
+console.log(self.modalData());
+                if (self.modalData().id === undefined){
+                    // Create
+                    io.socket.put('/' + url + '/create', dataToSave, function(data, jwr){
+                        console.log(data);
+                        console.log(jwr);
+                        if (jwr.statusCode == 201){
+                            if (url == 'datacenter'){
+                                self.dcs.push(data);
+                            } else if (url == 'rackmount'){
+                                self.racks.push(data);
+                            } else if (url == 'equipment'){
+                                self.equipments.push(data);
+                            }
+
+                            $('#eqModal').modal('hide');
+                        } else {
+                            self.parseErrors(jwr);
+                        }
+                    });
+                } else {
+                    // Update
+                    updateUrl = '/' + url + '/' + self.modalData().id;
+                    io.socket.put(updateUrl, dataToSave, function(data, jwr){
+                        if (jwr.statusCode == 200){
+                            var index = self.modalDataIndex();
+
+                            if (url == 'datacenter'){
+                                self.dcs()[index](data);
+                            } else if (url == 'rackmount'){
+                                self.racks()[index](data);
+                            } else if (url == 'equipment'){
+                                self.equipments()[index](data);
+                            }
+
+                            $('#eqModal').modal('hide');
+                        } else {
+                            self.modalErrors.push('ERROR: ' + jwr.statusCode);
+                        }
+                    });
+                }
+            }
+
+        }.bind(this);
+
+        this.loadData = function(){
+            var self = this;
+            var dcQuery = {sort: 'name'};
+
+            io.socket.get('/datacenter', dcQuery, function(data, jwr){
+                if (jwr.statusCode == 200){
+                    var dcs = [];
+
+                    if (data !== undefined && data.length > 0){
+                        $.each(data, function(index, item){
+                            dcs.push(ko.observable(item));
+                        });
+                    }
+
+                    self.dcs(dcs);
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+            var rackQuery = {sort: 'datacenter.id'};
+
+            io.socket.get('/rackmount', rackQuery, function(data, jwr){
+                //console.log(data);
+                if (jwr.statusCode == 200){
+                    var racks = [];
+
+                    if (data !== undefined && data.length > 0){
+                        $.each(data, function(index, item){
+                            if (item.datacenter === undefined){
+                                item.datacenter = [];
+                            }
+                            racks.push(ko.observable(item));
+                        });
+                    }
+
+                    self.racks(racks);
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+            var eqQuery = {sort: 'rackmount.id'};
+
+            io.socket.get('/equipment', eqQuery, function(data, jwr){
+                //console.log(data);
+                if (jwr.statusCode == 200){
+                    var equipments = [];
+
+                    if (data !== undefined && data.length > 0){
+                        $.each(data, function(index, item){
+                            if (item.rackmount === undefined){
+                                item.rackmount = [];
+                            }
+                            equipments.push(ko.observable(item));
+                        });
+                    }
+
+                    self.equipments(equipments);
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+        }.bind(this);
+
+        this.showModal = function(size, title, template){
+            var self = this;
+
+            $('#eqModal').removeClass('small large fullscreen').addClass(size);
+            $('#eqModal .header').html(title);
+
+            self.modalTemplate(template);
+
+            $('#eqModal').modal({onHide: function(){
+                                        self.modalTemplate(false);
+                                        self.modalData(false);
+                                        self.modalDataIndex(false);
+                                        }
+                                }).modal('show').modal('refresh');
+
+            self.loading(false);
+
+        }.bind(this);
+
+        this.parseErrors = function(jwr){
+            var self = this;
+
+            if (jwr.error !== undefined){
+                if (jwr.error.error !== undefined){
+                        if (jwr.error.error == 'E_VALIDATION'){
+                            self.modalErrors.push(jwr.error.summary);
+                            $.each(jwr.error.invalidAttributes, function(field, item){
+                                self.modalErrors.push(field + ': ' + item[0].message);
+                            });
+                        }
+                } else {
+                    // TODO: Test other errors
+                    self.modalErrors.push('ERROR: ' + jwr.statusCode);
+                }
+            } else {
+                self.modalErrors.push('ERROR: ' + jwr.statusCode);
+            }
+
+        }.bind(this);
+
+        self.loadData();
+
+    };
+
+    ko.applyBindings(new configEqViewModel(), document.getElementById("configureEquipment"));
+
+</script>

@@ -32,51 +32,6 @@
     <link rel="stylesheet" href="/styles/importer.css">
     <link rel="stylesheet" href="/styles/semantic.min.css">
     <!--STYLES END-->
-  </head>
-
-  <body>
-  <%- partial ('elements/sidebar.ejs') %>
-    <div class="ui black big launch right attached fixed button" id="sidebarToggle">
-      <i class="content icon"></i>
-      <span class="text"><%= __('Menu') %></span>
-    </div>
-
-    <div class="ui padded grid pusher">
-        <div class="row">
-            <div class="one wide column">
-
-            </div>
-            <div class="fifteen wide column">
-                <%- body %>
-            </div>
-        </div>
-    </div>
-
-    <!--
-        Client-side Templates
-        ========================
-
-        HTML templates are important prerequisites of modern, rich client applications.
-        To work their magic, frameworks like Backbone, Angular, Ember, and Knockout require
-        that you load these templates client-side.
-
-        By default, your Gruntfile is configured to automatically load and precompile
-        client-side JST templates in your `assets/templates` folder, then
-        include them here automatically (between TEMPLATES and TEMPLATES END).
-
-        To customize this behavior to fit your needs, just edit `tasks/pipeline.js`.
-        For example, here are a few things you could do:
-
-            + Import templates from other directories
-            + Use a different template engine (handlebars, jade, dust, etc.)
-            + Internationalize your client-side templates using a server-side
-              stringfile before they're served.
-    -->
-
-    <!--TEMPLATES-->
-    
-    <!--TEMPLATES END-->
-
 
     <!--
 
@@ -105,8 +60,68 @@
     <script src="/js/dependencies/sails.io.js"></script>
     <script src="/js/dependencies/jquery.min.js"></script>
     <script src="/js/dependencies/knockout.js"></script>
+    <script src="/js/dependencies/moment.min.js"></script>
+    <script src="/js/dependencies/ru.js"></script>
     <script src="/js/dependencies/semantic.min.js"></script>
     <!--SCRIPTS END-->
+
+  </head>
+
+  <body>
+    <div class="ui fixed main menu menu-shadow">
+        <div class="header item">
+            DC Monitor 2
+        </div>
+    </div>
+    <%- partial ('elements/sidebar.ejs') %>
+    <div class="ui black big launch right attached fixed button" id="sidebarToggle">
+        <i class="content icon"></i>
+        <span class="text"><%= __('Menu') %></span>
+    </div>
+
+    <div class="ui padded grid pusher" style="padding-top: 40px;">
+        <div class="row">
+            <div class="one wide column">
+
+            </div>
+            <div class="fifteen wide column">
+                <%- body %>
+            </div>
+        </div>
+    </div>
+
+    <div class="ui small modal" id="mainModal">
+        <i class="close icon"></i>
+        <div class="header"></div>
+        <div class="content"><div class="description"></div></div>
+        <div class="actions">
+            <div class="ui button"><%= __('Cancel') %></div>
+        </div>
+    </div>
+    <!--
+        Client-side Templates
+        ========================
+
+        HTML templates are important prerequisites of modern, rich client applications.
+        To work their magic, frameworks like Backbone, Angular, Ember, and Knockout require
+        that you load these templates client-side.
+
+        By default, your Gruntfile is configured to automatically load and precompile
+        client-side JST templates in your `assets/templates` folder, then
+        include them here automatically (between TEMPLATES and TEMPLATES END).
+
+        To customize this behavior to fit your needs, just edit `tasks/pipeline.js`.
+        For example, here are a few things you could do:
+
+            + Import templates from other directories
+            + Use a different template engine (handlebars, jade, dust, etc.)
+            + Internationalize your client-side templates using a server-side
+              stringfile before they're served.
+    -->
+
+    <!--TEMPLATES-->
+    
+    <!--TEMPLATES END-->
 
     <script type="text/javascript">
         $('#sidebar').sidebar();
