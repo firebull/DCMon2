@@ -24,13 +24,16 @@ module.exports = {
             required: true,
             enum: ['server', 'store', 'lan']
           },
-    ipmi_address: {
-                    type: 'string',
-                    ip: true
-                  },
+    vendor: {
+                type: 'string',
+                required: true,
+                enum: HelperService.vendorsList()
+            },
+    address:    { type: 'ipv4' },
+    address_v6: { type: 'ipv6' },
     snmp_trap: 'string',
-    login: 'string',
-    password: 'string',
+    login:     'string',
+    password:  'string',
     monitoring_enable: {
                          type: 'boolean',
                          defaultsTo: true
@@ -42,12 +45,17 @@ module.exports = {
                  },
     status: {
                 type: 'string',
-                enum: ['ok', 'warn', 'error', 'alert'],
+                enum: ['ok', 'warn', 'error', 'alert', 'crit'],
                 defaultsTo: 'ok'
             },
     configuration: 'json',
-    sensors_proto: 'string',
-    events_proto: 'string',
+    query_configuration: {
+                            type: 'boolean',
+                            defaultsTo: true
+                         },
+    sensors_params: 'json',
+    sensors_proto:  'string',
+    events_proto:   'string',
     configuration_proto: 'string',
     rackmount: {
         model: 'rackmount',

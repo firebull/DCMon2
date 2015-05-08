@@ -6,6 +6,11 @@
  */
 
 module.exports = {
-	
+	testQuery: function(req, res){
+
+        QueryService.querySensors(function(err, result){
+            return res.json({url: req.url, data: result})
+        });
+    }
 };
 

@@ -98,7 +98,65 @@
     </button>
     <div class="clear"></div>
 
-
+    <table class="ui very basic table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th><%= __('RackMount') %></th>
+                <th><%= __('Type') %></th>
+                <th><%= __('Name/Description') %></th>
+                <th><%= __('Address') %></th>
+                <th><%= __('Monitored') %></th>
+                <th><%= __('Power state') %></th>
+                <th><%= __('Status') %></th>
+                <th><%= __('Last update') %></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody data-bind="foreach: { data: equipments, as: 'eq'}">
+            <tr data-bind="css: $root.eqStatusRow($data)">
+                <td data-bind="text: eq.id"></td>
+                <td data-bind="if: eq.rackmount">
+                    <div class="ui label" data-bind="visible: eq.rackmount.id">
+                        #<span data-bind="text: eq.rackmount.id"></span>
+                        "<span data-bind="text: eq.rackmount.name"></span>"
+                    </div>
+                </td>
+                <td data-bind="text: $root.eqTypesByType[eq.type]"></td>
+                <td>
+                    <div class="ui small header">
+                        <div class="content">
+                            <span data-bind="text: eq.name"></span>
+                            <div class="ui sub header" data-bind="text: eq.description"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span data-bind="text: eq.address"></span>
+                </td>
+                <td>
+                    <div class="ui label" data-bind="css: {'green': monitoring_enable}">
+                        <span data-bind="text: monitoring_enable ? $root.yesNo['yes'] : $root.yesNo['no']"></span>
+                    </div>
+                </td>
+                <td>
+                    <div class="ui label" data-bind="css: {'green': power_state == 'on', 'red': power_state == 'off'}">
+                        <span data-bind="text: $root.powerStatesByType[power_state]"></span>
+                    </div>
+                </td>
+                <td>
+                    <div class="ui label" data-bind="css: {'green': status == 'ok', 'orange': status == 'warn', 'red': status != 'ok' && status != 'warn'}">
+                        <span data-bind="text: $root.statusByType[status]"></span>
+                    </div>
+                </td>
+                <td data-bind="text: moment(eq.updatedAt).format('HH:mm:SS DD.MM.YYYY');"></td>
+                <td>
+                    <button class="ui small red right floated button"><%= __('Delete') %></button>
+                    <button data-bind="event: {click: $root.eqForm.bind(false, $index())}" class="ui small primary right floated button"><%= __('Edit') %></button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
     <div class="ui clearing divider"></div>
     <p></p>
@@ -176,8 +234,16 @@
                                optionsCaption: '<%= __('Choose one...') %>'"></select>
         </div>
         <div class="field">
-            <label><%= __('IPMI Address') %></label>
-            <input type="text" data-bind="value: $root.modalData().ipmi_address">
+            <label><%= __('Equipment Vendor') %></label>
+            <select data-bind="options: $root.vendors,
+                               optionsText: 'longname',
+                               optionsValue: 'name',
+                               value: $root.modalData().vendor,
+                               optionsCaption: '<%= __('Choose one...') %>'"></select>
+        </div>
+        <div class="field">
+            <label><%= __('IPMI/iLo/SNMP Address') %></label>
+            <input type="text" data-bind="value: $root.modalData().address">
         </div>
         <div class="field">
             <label><%= __('SNMP Trap') %></label>
@@ -271,14 +337,27 @@
                                {name: 'store', longname: "<%= __('Data Store') %>"},
                                {name: 'lan', longname: "<%= __('Lan') %>"}];
 
+        this.eqTypesByType = <%- JSON.stringify(HelperService.eqTypesByType(req)) %>;
+
         this.protocols = [{name: "ipmi", longname: "IPMI"},
                           {name: "ipmiv2", longname: "IPMI v2"},
                           {name: "ilo_http", longname: "HP iLo HTTP"},
                           {name: "ilo_raw", longname: "HP iLo RAW"},
                           {name: "snmp", longname: "SNMP"}];
 
+        this.protocolsByname = <%- JSON.stringify(HelperService.protocolsByname(req)) %>;
+
         this.powerStates = [{name: 'on', longname: "<%= __('Power On') %>"},
                             {name: 'off', longname: "<%= __('Power Off') %>"}];
+
+        this.powerStatesByType = <%- JSON.stringify(HelperService.powerStatesByType(req)) %>;
+
+        this.statusByType = <%- JSON.stringify(HelperService.statusByType(req)) %>;
+
+        this.vendors = <%- JSON.stringify(sails.config.dcmon.vendors) %>;
+        this.vendorsByName = <%- JSON.stringify(HelperService.vendorsByName()) %>;
+
+        this.yesNo = <%- JSON.stringify(HelperService.yesNoArray(req)) %>;
 
         this.dcForm = function(id){
             var self = this;
@@ -330,7 +409,8 @@
                               rackmount: {id: undefined},
                               pos_in_rack: undefined,
                               type: 'server',
-                              ipmi_address: '127.0.0.1',
+                              vendor: undefined,
+                              address: '127.0.0.1',
                               snmp_trap: 'public',
                               login: undefined,
                               password: undefined,
@@ -376,18 +456,16 @@
                         dataToSave['datacenter'] = self.modalData().datacenter.id;
                     }
                 } else if (url == 'equipment'){
-                    if (self.modalData().datacenter === undefined){
+                    if (self.modalData().rackmount === undefined){
                         delete(dataToSave['rackmount']);
                     } else {
                         dataToSave['rackmount'] = self.modalData().rackmount.id;
                     }
                 }
-console.log(self.modalData());
+
                 if (self.modalData().id === undefined){
                     // Create
                     io.socket.put('/' + url + '/create', dataToSave, function(data, jwr){
-                        console.log(data);
-                        console.log(jwr);
                         if (jwr.statusCode == 201){
                             if (url == 'datacenter'){
                                 self.dcs.push(data);
@@ -531,6 +609,20 @@ console.log(self.modalData());
                 self.modalErrors.push('ERROR: ' + jwr.statusCode);
             }
 
+        }.bind(this);
+
+        this.eqStatusRow = function(eq){
+            if (eq.monitoring_enable){
+                if (eq.status == 'ok'){
+                    return 'positive';
+                } else if (eq.status == 'warn'){
+                    return 'warning';
+                } else {
+                    return 'error';
+                }
+            } else {
+                return '';
+            }
         }.bind(this);
 
         self.loadData();
