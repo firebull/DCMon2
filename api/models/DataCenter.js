@@ -6,7 +6,7 @@
 */
 
 module.exports = {
-
+  connection: 'dcmonMysqlServer',
   attributes: {
     id: {
             type: 'integer',

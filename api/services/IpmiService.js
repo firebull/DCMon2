@@ -1,6 +1,5 @@
 var util = require('util');
 
-
 function ipmiShell(q, callback){
     var spawn = require('child_process').spawn;
 
@@ -19,7 +18,6 @@ function ipmiShell(q, callback){
 
     ipmitool.stderr.on('data', function (data) {
         err.push(data.toString());
-        console.log(err);
     });
 
     ipmitool.on('close', function (code) {
@@ -33,11 +31,15 @@ function ipmiShell(q, callback){
         callback(err, result);
 
     });
+
+    ipmitool.on('error', function (error) {
+        ipmitool.stdin.end();
+    });
 }
 
 
 module.exports = {
-    querySensors: function(equipment){
+    querySensors: function(equipment, callback){
 
         var query = {'address':  equipment.address,
                      'login':    equipment.login,
@@ -53,6 +55,11 @@ module.exports = {
         }
 
         ipmiShell(query, function(err, data){
+
+            if (err.length > 0){
+                return callback(err, {});
+            }
+
             parser = eval(equipment.vendor.charAt(0).toUpperCase() + equipment.vendor.slice(1) + 'ParseService');
 
             parser.sensors(data, function(err, parsed){
@@ -60,16 +67,15 @@ module.exports = {
                 var sensors_params = {};
 
                 // Let's combine sensor limits from DB and parsed
-                if (equipment.sensors_params !== undefined){
-                    var newSensor = false;
+                if (equipment.sensors_params !== null){
+
                     parsed.limits.forEach(function(item, i){
 
                         // Add sensor limits to DB if absent
                         if (equipment.sensors_params[item.name] === undefined){
-                            newSensor = true;
                             equipment.sensors_params[item.name] = item;
-                            equipment.sensors_params[item.name].warnLimit = 0.03;
-                            equipment.sensors_params[item.name].alertLimit = 0.07;
+                            equipment.sensors_params[item.name].warnLimit = 0.07;
+                            equipment.sensors_params[item.name].alertLimit = 0.03;
                             equipment.sensors_params[item.name].criticalSensor = false;
                             equipment.sensors_params[item.name].ignoreSensor = false;
                         }
@@ -77,17 +83,13 @@ module.exports = {
 
                     sensors_params = equipment.sensors_params;
 
-                    if (newSensor === true){
-                        currentStatus.sensors_params = sensors_params;
-                    }
-
                 } else if (parsed.limits.length > 0) {
                     sensors_params = {};
 
                     parsed.limits.forEach(function(item, i){
                         sensors_params[item.name] = item;
-                        sensors_params[item.name].warnLimit = 0.03;
-                        sensors_params[item.name].alertLimit = 0.07;
+                        sensors_params[item.name].warnLimit = 0.07;
+                        sensors_params[item.name].alertLimit = 0.03;
                         sensors_params[item.name].criticalSensor = false;
                         sensors_params[item.name].ignoreSensor = false;
 
@@ -96,18 +98,7 @@ module.exports = {
                     currentStatus.sensors_params = sensors_params;
                 }
 
-                // ASYNC: Check sensors for limits and save to log and alert if needed
-
-
-                // ASYNC: Save sensors data to OpenTSDB
-
-
-                // ASYNC: Save equipment status to DB
-                Equipment.update({'id': equipment.id}, currentStatus, function(err, result){
-                    if (err){
-                        util.log(err);
-                    }
-                });
+                callback(false, {'sensors': parsed.sensors, 'limits': sensors_params})
 
             });
         });

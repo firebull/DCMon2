@@ -6,7 +6,7 @@
 */
 
 module.exports = {
-
+  connection: 'dcmonMysqlServer',
   attributes: {
     id: {
             type: 'integer',
@@ -29,7 +29,7 @@ module.exports = {
                 required: true,
                 enum: HelperService.vendorsList()
             },
-    address:    { type: 'ipv4' },
+    address:    { type: 'string' },
     address_v6: { type: 'ipv6' },
     snmp_trap: 'string',
     login:     'string',
@@ -43,7 +43,12 @@ module.exports = {
                     enum: ['off', 'on'],
                     defaultsTo: 'on'
                  },
-    status: {
+    sensor_status: {
+                type: 'string',
+                enum: ['ok', 'warn', 'error', 'alert', 'crit'],
+                defaultsTo: 'ok'
+            },
+    event_status: {
                 type: 'string',
                 enum: ['ok', 'warn', 'error', 'alert', 'crit'],
                 defaultsTo: 'ok'
@@ -54,12 +59,19 @@ module.exports = {
                             defaultsTo: true
                          },
     sensors_params: 'json',
+    sensors_state: 'json',
     sensors_proto:  'string',
     events_proto:   'string',
     configuration_proto: 'string',
     rackmount: {
         model: 'rackmount',
         required: true,
+    },
+    // Override toJSON instance method to remove password value
+    toJSON: function() {
+      var obj = this.toObject();
+      delete obj.password;
+      return obj;
     }
   }
 };

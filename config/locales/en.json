@@ -69,5 +69,8 @@
 	"Status": "Status",
 	"Last update": "Last update",
 	"Type": "Type",
-	"Equipment Vendor": "Equipment Vendor"
+	"Equipment Vendor": "Equipment Vendor",
+	"Name/Address/Description": "Name/Address/Description",
+	"Sensor/Event Status": "Sensor/Event Status",
+	"Equipment monitoring": "Equipment monitoring"
 }

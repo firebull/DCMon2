@@ -32,9 +32,8 @@ module.exports.routes = {
   *                                                                          *
   ***************************************************************************/
 
-  '/': {
-    view: 'homepage'
-  }
+  '/': 'EquipmentController.monitor',
+  '/notifications/subscribe/:roomName': 'NotificationsController.subscribe'
 
   /***************************************************************************
   *                                                                          *

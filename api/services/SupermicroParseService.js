@@ -5,23 +5,24 @@
     Must return json object like:
 
     { sensors:
-       [ { name: 'System_Temp',
+       [ { name: 'SystemTemp',
            current: 31,
            units: 'degrees C',
            timestamp: 1431086975 },
-         { name: 'CPU1_Vcore',
+         { name: 'Cpu1Vcore',
            current: 1.024,
            units: 'Volts',
            timestamp: 1431086975 }],
       limits:
-       [ { name: 'System_Temp', min: -5, max: 75 },
-         { name: 'CPU1_Vcore', min: 0.752, max: 1.352 }] }
+       [ { name: 'SystemTemp', min: -5, max: 75 },
+         { name: 'Cpu1Vcore', min: 0.752, max: 1.352 }] }
 
 
  */
 
 
 var XRegExp = require('xregexp').XRegExp;
+var changeCase = require('change-case');
 
 module.exports = {
     sensors: function(rawData, callback){
@@ -40,13 +41,17 @@ module.exports = {
             sensorName   = "";
 
             if (parsed !== null){
+                // Save original name of sensor to show it as graph name
+                sensorLimits.origName = parsed.sensor.trim();
 
-                // Remove spaces, - and + for OpenTSDB
-                sensorName = XRegExp.replace(parsed.sensor.trim(), ' ', '_');
-                sensorName = XRegExp.replace(sensorName, '-', 'minus_');
-                sensorName = XRegExp.replace(sensorName, '+', 'plus_');
+                // Convert sensor name to PascalCase for InfluxDB
+                sensorName = XRegExp.replace(parsed.sensor.trim(), '-', 'minus ');
+                sensorName = XRegExp.replace(sensorName, '+', 'plus ');
+                sensorName = XRegExp.replace(sensorName, '\.', 'point', 'all');
+                sensorName = XRegExp.replace(sensorName, '_', 'underscore', 'all');
+                sensorName = changeCase.pascalCase(sensorName);
 
-                // Data for OpenTSDB
+                // Prepare Data for later parse for InfluxDB
                 sensorData.name = sensorName;
                 sensorData.current = parseFloat(parsed.current.trim());
                 sensorData.units = parsed.units.trim();

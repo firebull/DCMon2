@@ -13,7 +13,6 @@ module.exports = {
    * `ConfigController.eq()`
    */
   eq: function (req, res) {
-    console.log(req.url);
     return res.view({'url': req.url});
   },
 

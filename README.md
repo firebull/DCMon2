@@ -8,6 +8,12 @@ This is Opensource project based on my other project written on Python. That ver
 
 Why do I want to make one more monitoring utility? Well, in fact there is no any utility to monitor really big number of servers through IPMI: to get there sensors, event logs, handle their events and alert admins. In my own experience, offen troubles can be predicted much earlier if you get low level data such as IPMI Event logs and sensors.
 
+## Install
+
+Instruction is for Debian. You can use Linux distribution of your own.
+
+#### InfluxDB
+Use instaructions from http://influxdb.com/docs/v0.8/introduction/installation.html
 
 
 a [Sails](http://sailsjs.org) application

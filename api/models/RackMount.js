@@ -6,7 +6,7 @@
 */
 
 module.exports = {
-
+  connection: 'dcmonMysqlServer',
   attributes: {
     id: {
             type: 'integer',
@@ -19,7 +19,8 @@ module.exports = {
           },
     description: 'text',
     datacenter: {
-        model: 'datacenter'
+        model: 'datacenter',
+        via: 'racks'
     },
     equipments: {
         collection: 'equipment',
