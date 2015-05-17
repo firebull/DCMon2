@@ -6,21 +6,50 @@
         </div>
     </h3>
     <div class="ui inverted teal small menu" data-bind="foreach: {data: dcs, as: 'dc'}">
-        <a class="item" data-bind="css: {'active': $root.selectedDc() == dc.id}">
+        <a class="item" data-bind="event: {click: $root.selectDc.bind($data)}, css: {'active': $root.selectedDc() == dc.id}">
             <span data-bind="text: dc.name"></span>
             <div class="text" data-bind="text: dc.description"></div>
         </a>
     </div>
-    <div class="ui padded grid">
+    <div class="ui divided equal height grid">
         <div class="ui row">
-            <div class="green four wide column">
-                Racks list will be here
+            <div class="four wide column">
+                <div class="ui segment" data-bind="visible: racks().length == 0">
+                    <%= __('No Rackmounts') %>
+                </div>
+                <div class="ui link divided items" data-bind="foreach: {data: racks, as: 'rack'}">
+                    <div class="item" data-bind="event: {click: $root.selectRack.bind($data)}">
+                        <div class="content">
+                            <div class="header" data-bind="text: rack.name"></div>
+                            <div class="description" data-bind="text: rack.description"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="teal four wide column">
-                Equipment list will be here
+            <div class="four wide column">
+                <div class="ui segment" data-bind="visible: eqs().length == 0">
+                    <%= __('No Equipment') %>
+                </div>
+                <div class="ui small divided selection list" data-bind="foreach: {data: eqs, as: 'eq'}">
+                    <div class=" item" data-bind="event: {click: $root.selectEq.bind($data)}">
+                        <div class="content">
+                            <div class="header">
+                                <i class="icon circle" data-bind="css: {'green': eq.power_state == 'on', 'thin': eq.power_state == 'off'}, attr: {'title': $root.powerStatesByType[eq.power_state]}"></i>
+                                <span data-bind="text: eq.name"></span>
+                            </div>
+                            <div class="description" data-bind="text: eq.address"></div>
+                            <i class="circular small inverted icon" data-bind="css: $root.monitoringIcon(eq.monitoring_enable)"></i>
+                            <i class="circular small inverted dashboard icon" data-bind="css: $root.eqStatusColor($data, 'sensor_status')"></i>
+                            <i class="circular small green inverted envelope icon" data-bind="css: $root.eqStatusColor($data, 'event_status')"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="eight wide red column">
-                Logs and graphs will be here
+            <div class="eight wide column">
+                <div class="ui segment" data-bind="visible: eqs().length == 0">
+                    <%= __('Click Rackmount or Equipment on the left to see events and graphs') %>
+                </div>
+
             </div>
         </div>
     </div>
@@ -30,19 +59,93 @@
     var monitorEqViewModel = function(){
         var self = this;
 
-        this.errors = ko.observableArray();
+        this.errors      = ko.observableArray();
         this.modalErrors = ko.observableArray();
-        this.loading = ko.observable(false);
-        this.dcs = ko.observableArray();
-        this.selectedDc = ko.observable(false);
-        this.racks = ko.observableArray();
+        this.loading     = ko.observable(false);
+        this.dcs         = ko.observableArray();
+        this.selectedDc  = ko.observable(false);
+        this.racks       = ko.observableArray();
+        this.selectedRack = ko.observable(false);
+        this.eqs          = ko.observableArray();
+
+        this.eqTypesByType     = <%- JSON.stringify(HelperService.eqTypesByType(req)) %>;
+        this.protocolsByname   = <%- JSON.stringify(HelperService.protocolsByname(req)) %>;
+        this.powerStatesByType = <%- JSON.stringify(HelperService.powerStatesByType(req)) %>;
+        this.statusByType      = <%- JSON.stringify(HelperService.statusByType(req)) %>;
+        this.vendors           = <%- JSON.stringify(sails.config.dcmon.vendors) %>;
+        this.vendorsByName     = <%- JSON.stringify(HelperService.vendorsByName()) %>;
+        this.yesNo             = <%- JSON.stringify(HelperService.yesNoArray(req)) %>;
 
         this.selectDc = function(dc){
             var self = this;
 
+            self.racks([]);
+            self.eqs([]);
             self.selectedDc(dc.id);
+            var racks = [];
+            $.each(dc.racks, function(index, item){
+                item.errors = ko.observable(0);
+                item.warning = ko.observable(0);
+                racks.push(ko.observable(item));
+                if (self.selectedRack() === false){
+                    self.selectRack(item);
+                }
+            });
+
+            self.racks(racks);
 
         }.bind(this);
+
+        this.selectRack = function(rack){
+            var self = this;
+
+            self.eqs([]);
+            self.selectedRack(rack.id);
+
+            var eqQuery = {sort: 'name'};
+
+            io.socket.get('/rackmount/' + rack.id + '/equipments', eqQuery, function(data, jwr){
+                if (jwr.statusCode == 200){
+                    var eqs = [];
+
+                    if (data !== undefined && data.length > 0){
+                        $.each(data, function(index, item){
+                            eqs.push(ko.observable(item));
+                        });
+                    }
+
+                    self.eqs(eqs);
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+        }.bind(this);
+
+        this.selectEq = function(eq){
+            var self = this;
+
+        }.bind(this);
+
+        this.eqStatusColor = function(eq, param){
+
+            if (eq.monitoring_enable && eq.power_state == 'on'){
+                if (eq[param] == 'ok'){
+                    return 'green';
+                } else if (eq[param] == 'warn'){
+                    return 'orange';
+                } else {
+                    return 'red';
+                }
+            } else {
+                return '';
+            }
+
+        }.bind(this);
+
+        this.monitoringIcon = function(enable){
+            return enable ? 'checkmark green' : 'minus';
+        }
 
         this.loadData = function(){
             var self = this;
@@ -61,7 +164,7 @@
                             item.warning = ko.observable(0);
                             dcs.push(ko.observable(item));
                             if (self.selectedDc() === false){
-                                self.selectedDc(item.id);
+                                self.selectDc(item);
                             }
                         });
                     }

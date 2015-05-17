@@ -45,12 +45,12 @@ module.exports = {
                  },
     sensor_status: {
                 type: 'string',
-                enum: ['ok', 'warn', 'error', 'alert', 'crit'],
+                enum: ['ok', 'warn', 'error', 'alert', 'crit', 'emerg'],
                 defaultsTo: 'ok'
             },
     event_status: {
                 type: 'string',
-                enum: ['ok', 'warn', 'error', 'alert', 'crit'],
+                enum: ['ok', 'warn', 'error', 'alert', 'crit', 'emerg'],
                 defaultsTo: 'ok'
             },
     configuration: 'json',
