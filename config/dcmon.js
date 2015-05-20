@@ -20,5 +20,8 @@ module.exports.dcmon = {
               timePrecision : 's'
              },
 
+    elastical: { host : 'localhost',
+                 port : 9200
+               }
 
-}
+};

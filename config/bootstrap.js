@@ -10,7 +10,24 @@
  */
 
 module.exports.bootstrap = function(cb) {
+    var influx  = require('influx');
     var winston = require('winston');
+
+    var elastical = require('elastical');
+    var winstonElastic = require('winston-elasticsearch');
+
+    sails.elastical = new elastical.Client(sails.config.dcmon.elastical.host,
+                                           {port: sails.config.dcmon.elastical.port});
+
+    sails.influxClient = influx({
+                              host : sails.config.dcmon.influx.host,
+                              port : sails.config.dcmon.influx.port, // optional, default 8086
+                              protocol : sails.config.dcmon.influx.protocol, // optional, default 'http'
+                              username : sails.config.dcmon.influx.username,
+                              password : sails.config.dcmon.influx.password,
+                              database : sails.config.dcmon.influx.database,
+                              timePrecision : sails.config.dcmon.influx.timePrecision
+                            });
 
     var dcmonLevels = {
         levels: {
@@ -58,7 +75,17 @@ module.exports.bootstrap = function(cb) {
           filename: 'dcmon-error.log',
           level: 'error',
           maxFiles: 5
-        })
+        }),
+
+        // Elasticsearch
+        new (winstonElastic)({
+          name: 'info-elastic',
+          timestamp: true,
+          level: 'info',
+          client: sails.elastical,
+          disable_fields: true,
+          source: 'DC Monitor 2'
+        }),
       ]
     });
 
@@ -69,7 +96,7 @@ module.exports.bootstrap = function(cb) {
             if (err){
                 sails.logger.error('Could not query sensors: %s', err);
             }
-        })
+        });
     }, 180000);
 
     // It's very important to trigger this callback method when you are finished

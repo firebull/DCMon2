@@ -14,6 +14,8 @@ module.exports = {
 
         return {'ok': sails.__({ phrase: 'OK',
                                   locale: lang}),
+                'info': sails.__({ phrase: 'Info',
+                                  locale: lang}),
                 'warn': sails.__({ phrase: 'Warning',
                                   locale: lang}),
                 'error': sails.__({ phrase: 'Error',
@@ -21,6 +23,8 @@ module.exports = {
                 'alert': sails.__({ phrase: 'Alert',
                                   locale: lang}),
                 'crit': sails.__({ phrase: 'Critical',
+                                  locale: lang}),
+                'emerg': sails.__({ phrase: 'Emergency',
                                   locale: lang})};
     },
 

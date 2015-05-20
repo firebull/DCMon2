@@ -75,5 +75,18 @@
 	"Equipment monitoring": "Equipment monitoring",
 	"No Rackmounts": "No Rackmounts",
 	"No Equipment": "No Equipment",
-	"Click Rackmount or Equipment on the left to see events and graphs": "Click Rackmount or Equipment on the left to see events and graphs"
+	"Click Rackmount or Equipment on the left to see events and graphs": "Click Rackmount or Equipment on the left to see events and graphs",
+	"Sensors data": "Sensors data",
+	"Date/Time": "Date/Time",
+	"Query data from:": "Query data from:",
+	"To:": "To:",
+	"Confirm": "Confirm",
+	"Leave comment": "Leave comment",
+	"Refresh": "Refresh",
+	"No events found": "No events found",
+	"Reset": "Reset",
+	"Info": "Info",
+	"Emergency": "Emergency",
+	"Log level filter": "Log level filter",
+	"Date/Time filter": "Date/Time filter"
 }

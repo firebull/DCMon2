@@ -98,7 +98,7 @@ module.exports = {
                     currentStatus.sensors_params = sensors_params;
                 }
 
-                callback(false, {'sensors': parsed.sensors, 'limits': sensors_params})
+                callback(false, {'sensors': parsed.sensors, 'limits': sensors_params});
 
             });
         });

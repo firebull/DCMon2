@@ -31,7 +31,7 @@ module.exports = {
         var splitted  = rawData.toString().split('\n');
         var parsed;
         var result    = {'sensors': [], 'limits': []};
-        var timestamp = Date.now() / 1000 | 0;
+        var timestamp = Date.now()/1000;
 
 
         splitted.forEach(function(string){
@@ -43,6 +43,7 @@ module.exports = {
             if (parsed !== null){
                 // Save original name of sensor to show it as graph name
                 sensorLimits.origName = parsed.sensor.trim();
+                sensorLimits.units = parsed.units.trim();
 
                 // Convert sensor name to PascalCase for InfluxDB
                 sensorName = XRegExp.replace(parsed.sensor.trim(), '-', 'minus ');

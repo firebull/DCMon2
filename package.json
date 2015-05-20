@@ -1,9 +1,9 @@
 {
-  "name": "dcmon2",
+  "name": "DC Monitor 2",
   "private": true,
-  "version": "0.0.0",
-  "description": "a Sails application",
-  "keywords": [],
+  "version": "0.0.1",
+  "description": "Monitor different equipment by IPMI, iLo or SNMP",
+  "keywords": ["IPMI", "iLo", "SNMP"],
   "dependencies": {
     "sails": "~0.11.0",
     "sails-disk": "~0.10.0",
@@ -25,7 +25,8 @@
     "grunt-contrib-less": "0.11.1",
     "grunt-contrib-coffee": "~0.10.1",
     "xregexp": "~2.0.0",
-    "winston": "~1.0.0",
+    "winston": "*",
+    "winston-elasticsearch": "*",
     "influx": "~3.4.0",
     "ip": "~0.3.2",
     "string-template": "~0.2.1",
@@ -40,6 +41,6 @@
     "type": "git",
     "url": "git://github.com/nikita/dcmon2.git"
   },
-  "author": "nikita",
-  "license": ""
+  "author": "Nikita Bulaev",
+  "license": "MIT"
 }

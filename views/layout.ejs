@@ -30,6 +30,7 @@
 
     <!--STYLES-->
     <link rel="stylesheet" href="/styles/importer.css">
+    <link rel="stylesheet" href="/styles/jquery.datetimepicker.css">
     <link rel="stylesheet" href="/styles/semantic.min.css">
     <!--STYLES END-->
 
@@ -59,20 +60,32 @@
     <!--SCRIPTS-->
     <script src="/js/dependencies/sails.io.js"></script>
     <script src="/js/dependencies/jquery.min.js"></script>
+    <script src="/js/dependencies/moment.min.js"></script>
+    <script src="/js/dependencies/dygraph-combined.js"></script>
+    <script src="/js/dependencies/jquery.datetimepicker.js"></script>
     <script src="/js/dependencies/knockout.js"></script>
     <script src="/js/dependencies/lodash.min.js"></script>
-    <script src="/js/dependencies/moment.min.js"></script>
-    <script src="/js/dependencies/ru.js"></script>
+    <script src="/js/dependencies/moment-ru.js"></script>
     <script src="/js/dependencies/semantic.min.js"></script>
+    <script src="/js/dependencies/smooth-plotter.js"></script>
     <!--SCRIPTS END-->
 
   </head>
 
   <body>
-    <div class="ui fixed main menu menu-shadow">
+    <div class="ui fixed main menu menu-shadow" id="topMenu">
         <div class="header item">
             DC Monitor 2
         </div>
+        <!-- ko if: commonStatus() -->
+        <div class="item" data-bind="foreach: {data: commonStatus().sensors(), as: 'state'}">
+            <i class="dashboard icon"></i>
+            <div class="ui label" data-bind="css: {'green': state.status == 'ok'}">
+                <i class="icon" data-bind="css: {'check': state.status == 'ok'}"></i>
+                <span data-bind="text: state.num"></span>
+            </div>
+        </div>
+        <!-- /ko -->
     </div>
     <%- partial ('elements/sidebar.ejs') %>
     <div class="ui black big launch right attached fixed button" id="sidebarToggle">
@@ -121,7 +134,7 @@
     -->
 
     <!--TEMPLATES-->
-    
+
     <!--TEMPLATES END-->
 
     <script type="text/javascript">
@@ -129,6 +142,53 @@
         $('#sidebarToggle').click(function(){
             $('#sidebar').sidebar('toggle');
         });
+
+    var topMenuViewModel = function(){
+        var self = this;
+
+        this.errors = ko.observableArray();
+        this.commonStatus = ko.observable(false);
+
+        io.socket.on('connect', function(){
+            io.socket.get('/notifications/subscribe/statusUpdates');
+        });
+
+        io.socket.on('statusUpdates',function(obj){
+          if (obj.verb == 'messaged') {
+            self.loadStates();
+          } else {
+            console.log(obj);
+          }
+        });
+
+        this.loadStates = function(){
+            var self = this;
+
+            io.socket.get('/equipment/getCommonStatus', function(data, jwr){
+                if (jwr.statusCode == 200){
+                    var states = {};
+                    if (data.error){
+                        self.errors.push(data.error);
+                    } else {
+                        _.forIn(data.result, function(value, key){
+                            states[key] = ko.observableArray(value);
+                        });
+
+                        self.commonStatus(states);
+                    }
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+console.log(self.commonStatus().sensors());
+            });
+
+        }.bind(this);
+
+        this.loadStates();
+
+    };
+
+    ko.applyBindings(new topMenuViewModel(), document.getElementById("topMenu"));
     </script>
   </body>
 </html>

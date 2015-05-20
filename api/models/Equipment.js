@@ -73,6 +73,8 @@ module.exports = {
       delete obj.password;
       return obj;
     }
-  }
+  },
+
+
 };
 

@@ -34,7 +34,7 @@ module.exports = {
                     limits = data.limits[sensor.name];
 
                     // Count deviations
-                    if (sensor.current != 0){
+                    if (sensor.current !== 0){
                         minDev = Math.abs((sensor.current - limits.min) / sensor.current);
                     } else {
                         minDev = 0;
@@ -49,10 +49,10 @@ module.exports = {
                     {
                         sails.dcmonLogger('alert', "Sensor '%s' is out of Range! Current: %s. Limits: [%s, %s].",
                                                    sensor.name, sensor.current, limits.min, limits.max,
-                                                   {host: equipment.address, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                                   {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
 
                         currentState.sensor_status = 'alert';
-                        sensorsStates['alert'][sensor.name] = sensor;
+                        sensorsStates.alert[sensor.name] = sensor;
                     }
                     else
                     if ((minDev > limits.alertLimit && minDev <= limits.warnLimit)
@@ -60,13 +60,13 @@ module.exports = {
                     {
                         sails.logger.warn("Sensor '%s' is at Range limits! Current: %s. Limits: [%s, %s].",
                                            sensor.name, sensor.current, limits.min, limits.max,
-                                           {host: equipment.address, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                           {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
 
                         if (currentState.sensor_status != 'alert') {
                             currentState.sensor_status = 'warn';
                         }
 
-                        sensorsStates['warn'][sensor.name] = sensor;
+                        sensorsStates.warn[sensor.name] = sensor;
                     }
                 }
             });
@@ -85,7 +85,7 @@ module.exports = {
             Equipment.update({'id': equipment.id}, currentState, function(err, result){
                 if (err){
                     sails.logger.error('Could not update equipment data in DB: %s', err,
-                                        {host: equipment.address, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                        {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
 
                 } else {
                     Equipment.publishUpdate(equipment.id, {sensor_status: result[0].sensor_status, updatedAt: result[0].updatedAt});
@@ -93,17 +93,18 @@ module.exports = {
             });
 
             //ASYNC: Save point data to InfluxDB
+            //console.log(saveData);
             if (Object.keys(saveData).length > 0){
                 influxClient.writeSeries(saveData, function(err){
                     if (err){
                         sails.logger.error('Could not save equipment sensors data in DB: %s', err,
-                                           {host: equipment.address, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                           {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
                     } else {
                         Equipment.message(equipment.id, {message: 'sensorsUpdated'});
                     }
                 });
             } else {
-                sails.logger.info('%s (%s): No sensors data to save', equipment.name, equipment.address);
+                sails.logger.info('%s (%s): No sensors data to save', equipment.name, equipment.address, {host: equipment.address, eq: eq.id});
             }
         }
     },

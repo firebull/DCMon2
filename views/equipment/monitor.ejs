@@ -1,5 +1,5 @@
 <div id="monitorPage">
-    <h3 class="ui purple dividing header">
+    <h3 class="ui blue dividing header">
         <i class="dashboard icon"></i>
         <div class="content">
             <%= __('Equipment monitoring') %>
@@ -13,11 +13,11 @@
     </div>
     <div class="ui divided equal height grid">
         <div class="ui row">
-            <div class="four wide column">
+            <div class="three wide column">
                 <div class="ui segment" data-bind="visible: racks().length == 0">
                     <%= __('No Rackmounts') %>
                 </div>
-                <div class="ui link divided items" data-bind="foreach: {data: racks, as: 'rack'}">
+                <div class="ui small divided list" data-bind="foreach: {data: racks, as: 'rack'}">
                     <div class="item" data-bind="event: {click: $root.selectRack.bind($data)}">
                         <div class="content">
                             <div class="header" data-bind="text: rack.name"></div>
@@ -26,17 +26,18 @@
                     </div>
                 </div>
             </div>
-            <div class="four wide column">
+            <div class="three wide column">
                 <div class="ui segment" data-bind="visible: eqs().length == 0">
                     <%= __('No Equipment') %>
                 </div>
                 <div class="ui small divided selection list" data-bind="foreach: {data: eqs, as: 'eq'}">
-                    <div class=" item" data-bind="event: {click: $root.selectEq.bind($data)}">
+                    <div class="item" data-bind="event: {click: $root.selectEq.bind($data, $index())}, css: {'active': Number($root.selectedEq()) == $index()}">
                         <div class="content">
                             <div class="header">
                                 <i class="icon circle" data-bind="css: {'green': eq.power_state == 'on', 'thin': eq.power_state == 'off'}, attr: {'title': $root.powerStatesByType[eq.power_state]}"></i>
                                 <span data-bind="text: eq.name"></span>
                             </div>
+                            <i data-bind="visible: Number($root.selectedEq()) == $index()" class="arrow right floated medium icon"></i>
                             <div class="description" data-bind="text: eq.address"></div>
                             <i class="circular small inverted icon" data-bind="css: $root.monitoringIcon(eq.monitoring_enable)"></i>
                             <i class="circular small inverted dashboard icon" data-bind="css: $root.eqStatusColor($data, 'sensor_status')"></i>
@@ -45,28 +46,150 @@
                     </div>
                 </div>
             </div>
-            <div class="eight wide column">
-                <div class="ui segment" data-bind="visible: eqs().length == 0">
+            <div class="ten wide column">
+                <div class="ui segment" data-bind="visible: eqs().length == 0 && racks().length == 0">
                     <%= __('Click Rackmount or Equipment on the left to see events and graphs') %>
                 </div>
-
+                <!-- ko if: selectedEq() >= 0 -->
+                    <div data-bind="template: {name: 'eq-template', data: $root.eqs()[$root.selectedEq()], as: 'eq'}"></div>
+                <!-- /ko -->
             </div>
         </div>
     </div>
 </div>
+<script type="text/html" id="eq-template">
+    <div class="ui dividing header">
+        <div class="content">
+            ID <span data-bind="text: eq.id"></span>:
+            <span data-bind="text: eq.name"></span>,
+            <span data-bind="text: eq.description"></span>
+            <div class="sub header">
+               <span data-bind="text: $root.eqTypesByType[eq.type]"></span>,
+               <span data-bind="text: eq.address"></span>
+            </div>
+        </div>
+    </div>
+    <div class="ui form segment">
+        <div class="six fields" data-bind="visible: $root.detailsTab() == 'events'">
+            <div class="ui small blue dividing header"><%= __('Log level filter') %></div>
+            <div class="field">
+                <div class="ui checkbox">
+                    <input type="checkbox" value="info" id="infoCheck" data-bind="checked: $root.logLevels">
+                    <label for="infoCheck"><%= __('Info') %></label>
+                </div>
+            </div>
+            <div class="field">
+                <div class="ui checkbox">
+                    <input type="checkbox" value="warn" id="warnCheck" data-bind="checked: $root.logLevels">
+                    <label for="warnCheck"><%= __('Warning') %></label>
+                </div>
+            </div>
+            <div class="field">
+                <div class="ui checkbox">
+                    <input type="checkbox" value="error" id="errorCheck" data-bind="checked: $root.logLevels">
+                    <label for="errorCheck"><%= __('Error') %></label>
+                </div>
+            </div>
+            <div class="field">
+                <div class="ui checkbox">
+                    <input type="checkbox" value="alert" id="alertCheck" data-bind="checked: $root.logLevels">
+                    <label for="alertCheck"><%= __('Alert') %></label>
+                </div>
+            </div>
+            <div class="field">
+                <div class="ui checkbox">
+                    <input type="checkbox" value="crit" id="critCheck" data-bind="checked: $root.logLevels">
+                    <label for="critCheck"><%= __('Critical') %></label>
+                </div>
+            </div>
+            <div class="field">
+                <div class="ui checkbox">
+                    <input type="checkbox" value="emerg" id="emergCheck" data-bind="checked: $root.logLevels">
+                    <label for="emergCheck"><%= __('Emergency') %></label>
+                </div>
+            </div>
+        </div>
 
+        <div class="three fields">
+            <div class="ui small blue dividing header"><%= __('Date/Time filter') %></div>
+            <div class="field">
+                <label><%= __('Query data from:') %></label>
+                <input id="minTime" data-bind="value: $root.minQueryDate"></input>
+            </div>
+            <div class="field">
+                <label><%= __('To:') %></label>
+                <input id="maxTime" data-bind="value: $root.maxQueryDate"></input>
+            </div>
+            <div class="field">
+                <label>&nbsp;</label>
+                <button data-bind="event: {click: $root.filter.bind($data, eq.id)}" class="ui primary button"><%= __('Refresh') %></button>
+                <button data-bind="event: {click: $root.resetFilter.bind($data, eq.id)}" class="ui button"><%= __('Reset') %></button>
+            </div>
+        </div>
+    </div>
+    <div class="ui fluid two item tabular menu">
+        <a class="item" data-bind="event: {click: $root.showEvents.bind($data)}, css: {active: $root.detailsTab() == 'events'}"><%= __('Events') %></a>
+        <a class="item"  data-bind="event: {click: $root.showSensors.bind($data, eq.id)}, css: {active: $root.detailsTab() == 'sensors'}"><%= __('Sensors data') %></a>
+    </div>
+    <!-- ko if: $root.detailsTab() == 'events' -->
+    <div data-bind="template: {name: 'events-item-template'}"></div>
+    <!-- /ko -->
+    <!-- ko if: $root.detailsTab() == 'sensors' -->
+    <div data-bind="template: {name: 'graph-item-template', foreach: $root.eqGraphs, as: 'graph', afterRender: $root.renderGraph}"></div>
+    <!-- /ko -->
+</script>
+<script type="text/html" id="events-item-template">
+    <div class="ui segment" data-bind="visible: $root.events().length == 0">
+        <%= __('No events found') %>
+    </div>
+    <table class="ui very compact small table" data-bind="visible: $root.events().length > 0">
+        <tbody data-bind="foreach: {data: $root.events, as: 'event'}">
+            <tr data-bind="css: $root.eqEventColor(event._type)">
+                <td data-bind="text: moment(event._source['@timestamp']).format('HH:mm:ss DD/MM/YY')"></td>
+                <td data-bind="text: $root.statusByType[event._type]"></td>
+                <td data-bind="text: event._source['@message']"></td>
+                <td>
+                    <div class="mini icon ui primary buttons">
+                        <div title="<%= __('Confirm') %>" class="ui button"><i class="check icon"></i></div>
+                        <div title="<%= __('Leave comment') %>" class="ui button"><i class="comment icon"></i></div>
+                        <div title="<%= __('Delete') %>" class="ui button"><i class="remove circle icon"></i></div>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</script>
+<script type="text/html" id="graph-item-template">
+    <div class="ui horizontal divider" data-bind="text: $root.graphName(graph.name)"></div>
+    <div data-bind="attr: {'id': 'graph-' + name}"></div>
+</script>
 <script type="text/javascript">
     var monitorEqViewModel = function(){
         var self = this;
 
-        this.errors      = ko.observableArray();
-        this.modalErrors = ko.observableArray();
-        this.loading     = ko.observable(false);
-        this.dcs         = ko.observableArray();
-        this.selectedDc  = ko.observable(false);
-        this.racks       = ko.observableArray();
+        this.errors       = ko.observableArray();
+        this.modalErrors  = ko.observableArray();
+        this.loading      = ko.observable(false);
+        this.dcs          = ko.observableArray();
+        this.selectedDc   = ko.observable(false);
+        this.racks        = ko.observableArray();
         this.selectedRack = ko.observable(false);
+        this.viewedRacks  = ko.observableArray();
         this.eqs          = ko.observableArray();
+        this.selectedEq   = ko.observable(-1);
+        this.events       = ko.observableArray();  // Found events by criteria
+        this.eventsParams = ko.observable(false);  // Params of found events like 'total' found
+        this.eqGraphs     = ko.observableArray();
+        this.sensorsParams = ko.observable(false);
+        this.detailsTab   = ko.observable('events');
+
+        // Filter params
+        this.minQueryDate = ko.observable(moment().subtract(2, 'hours').format('YYYY-MM-DD HH:mm'));
+        this.maxQueryDate = ko.observable(moment().format('YYYY-MM-DD HH:mm'));
+        this.eventsRange  = ko.observable('last'); // Either request events by date range or last ones: 'last' or 'filter'
+        this.logLevels    = ko.observableArray(['emerg', 'alert', 'crit', 'warn', 'error']);
+
+
 
         this.eqTypesByType     = <%- JSON.stringify(HelperService.eqTypesByType(req)) %>;
         this.protocolsByname   = <%- JSON.stringify(HelperService.protocolsByname(req)) %>;
@@ -75,6 +198,8 @@
         this.vendors           = <%- JSON.stringify(sails.config.dcmon.vendors) %>;
         this.vendorsByName     = <%- JSON.stringify(HelperService.vendorsByName()) %>;
         this.yesNo             = <%- JSON.stringify(HelperService.yesNoArray(req)) %>;
+
+        this.plot = [];
 
         this.selectDc = function(dc){
             var self = this;
@@ -122,8 +247,162 @@
 
         }.bind(this);
 
-        this.selectEq = function(eq){
+        this.selectEq = function(index, eq){
             var self = this;
+
+            self.selectedEq(index);
+
+            if (self.detailsTab() == 'sensors'){
+                self.eqGraphs([]);
+                self.loadGraphs(eq.id);
+            } else if (self.detailsTab() == 'events'){
+                self.events([]);
+                self.loadEvents();
+            }
+
+            $('#minTime').datetimepicker({
+                format: 'Y-m-d H:i',
+                lang: 'en' // TODO: Take lang from session
+            });
+
+            $('#maxTime').datetimepicker({
+                format: 'Y-m-d H:i',
+                lang: 'en'
+            });
+
+        }.bind(this);
+
+        this.showSensors = function(id){
+            this.detailsTab('sensors');
+            this.loadGraphs(id);
+        }.bind(this);
+
+        this.showEvents = function(){
+            this.detailsTab('events');
+            this.loadEvents();
+        }.bind(this);
+
+        this.loadGraphs = function(id){
+            var self = this;
+
+            var graphQuery = {from: self.minQueryDate(), to: self.maxQueryDate()};
+
+            io.socket.get('/equipment/graphs/' + id, graphQuery, function(data, jwr){
+
+                if (jwr.statusCode == 200){
+                    eq = self.eqs()[self.selectedEq()]();
+                    self.sensorsParams(eq.sensors_params);
+                    self.eqGraphs(data.sensors);
+
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+        }.bind(this);
+
+        this.renderGraph = function(element, item){
+
+            storeName = _.words(item.name, /[^\.]+/g)[1];
+            sensor = this.sensorsParams()[storeName];
+
+            points = _.transform(item.points, function(result, point){
+                if (point[1] > sensor.max){
+                    sensor.max = point[1];
+                } else if (point[1] < sensor.min) {
+                    sensor.min = point[1];
+                }
+                return result.push([ new Date(point[0]*1000), point[1]]);
+            });
+
+            smoothPlotter.smoothing = 0.8;
+
+            new Dygraph(element[3],
+              points,
+              {
+                labels: [ "<%= __('Date/Time') %>", sensor.units ],
+                ylabel: sensor.units,
+                height: 200,
+                axes: {
+                    x: {
+                      gridLineWidth: 1,
+                      drawGrid: true
+                    },
+                },
+                connectSeparatedPoints: false,
+                //stepPlot: true,
+                valueRange: [sensor.min, sensor.max],
+                //plotter: smoothPlotter
+              });
+
+        }.bind(this);
+
+        this.graphName = function(name){
+            storeName = _.words(name, /[^\.]+/g)[1];
+            return this.sensorsParams()[storeName].origName;
+        }.bind(this);
+
+        this.loadEvents = function(){
+            var self = this;
+            var eq, eventsQuery;
+
+            self.events([]); // Clear current
+
+            if (self.selectedEq() >= 0){
+                eq = self.eqs()[self.selectedEq()]();
+                eventsQuery = {by: 'host', param: eq.address};
+            } else {
+                eventsQuery = {by: 'rack', param: self.selectedRack()};
+            }
+
+            eventsQuery.limit = 100;
+            if (self.eventsRange() == 'filter'){
+                eventsQuery.from   = self.minQueryDate();
+                eventsQuery.to     = self.maxQueryDate();
+                eventsQuery.levels = self.logLevels();
+            }
+
+            io.socket.get('/equipment/events', eventsQuery, function(data, jwr){
+
+                if (jwr.statusCode == 200){
+
+                    if (data.result !== null){
+                        self.eventsParams({total: data.result.total});
+                        if (Number(data.result.total) > 0){
+                            self.events(data.result.hits);
+                        }
+                        console.log(self.events());
+                    }
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+        }.bind(this);
+
+        this.filter = function(index, eq){
+            var self = this;
+
+            if (self.detailsTab() == 'events'){
+                self.eventsRange('filter');
+                self.loadEvents();
+            } else if (self.detailsTab() == 'sensors'){
+                self.loadGraphs(eq.id);
+            }
+
+        }.bind(this);
+
+        this.resetFilter = function(index, eq){
+            this.eventsRange('last');
+            this.minQueryDate = ko.observable(moment().subtract(2, 'hours').format('YYYY-MM-DD HH:mm'));
+            this.maxQueryDate = ko.observable(moment().format('YYYY-MM-DD HH:mm'));
+            this.logLevels    = ko.observableArray(['emerg', 'alert', 'crit', 'warn', 'error']);
+
+            if (self.detailsTab() == 'events'){
+                self.loadEvents();
+            } else if (self.detailsTab() == 'sensors'){
+                self.loadGraphs(eq.id);
+            }
 
         }.bind(this);
 
@@ -143,9 +422,21 @@
 
         }.bind(this);
 
+        this.eqEventColor = function(level){
+
+            if (level == 'warn'){
+                return 'warning';
+            } else if (level != 'info' && level != 'warn'){
+                return 'error';
+            } else {
+                return '';
+            }
+
+        }.bind(this);
+
         this.monitoringIcon = function(enable){
             return enable ? 'checkmark green' : 'minus';
-        }
+        };
 
         this.loadData = function(){
             var self = this;
