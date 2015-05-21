@@ -32,6 +32,7 @@
     <link rel="stylesheet" href="/styles/importer.css">
     <link rel="stylesheet" href="/styles/jquery.datetimepicker.css">
     <link rel="stylesheet" href="/styles/semantic.min.css">
+    <link rel="stylesheet" href="/styles/sweetalert.css">
     <!--STYLES END-->
 
     <!--
@@ -68,6 +69,7 @@
     <script src="/js/dependencies/moment-ru.js"></script>
     <script src="/js/dependencies/semantic.min.js"></script>
     <script src="/js/dependencies/smooth-plotter.js"></script>
+    <script src="/js/dependencies/sweetalert.min.js"></script>
     <!--SCRIPTS END-->
 
   </head>
@@ -75,16 +77,37 @@
   <body>
     <div class="ui fixed main menu menu-shadow" id="topMenu">
         <div class="header item">
+            <i class="icon" data-bind="css: {'green circle': connected, 'red warning sign': connected() === false }"></i>
             DC Monitor 2
         </div>
         <!-- ko if: commonStatus() -->
-        <div class="item" data-bind="foreach: {data: commonStatus().sensors(), as: 'state'}">
-            <i class="dashboard icon"></i>
-            <div class="ui label" data-bind="css: {'green': state.status == 'ok'}">
-                <i class="icon" data-bind="css: {'check': state.status == 'ok'}"></i>
+        <div class="item">
+            <!-- ko foreach: {data: commonStatus().power(), as: 'state'} -->
+            <div class="ui label" data-bind="css: $root.statusColor(state.status)">
+                <i class="power icon"></i>
                 <span data-bind="text: state.num"></span>
             </div>
+            <!-- /ko -->
         </div>
+        <div class="item">
+            <i class="dashboard icon"></i>
+            <!-- ko foreach: {data: commonStatus().sensors(), as: 'state'} -->
+            <div class="ui label" data-bind="css: $root.statusColor(state.status)">
+                <i class="icon" data-bind="css: $root.statusIcon(state.status)"></i>
+                <span data-bind="text: state.num"></span>
+            </div>
+            <!-- /ko -->
+        </div>
+        <div class="item">
+            <i class="mail icon"></i>
+            <!-- ko foreach: {data: commonStatus().events(), as: 'state'} -->
+            <div class="ui label" data-bind="css: $root.statusColor(state.status)">
+                <i class="icon" data-bind="css: $root.statusIcon(state.status)"></i>
+                <span data-bind="text: state.num"></span>
+            </div>
+            <!-- /ko -->
+        </div>
+
         <!-- /ko -->
     </div>
     <%- partial ('elements/sidebar.ejs') %>
@@ -134,7 +157,7 @@
     -->
 
     <!--TEMPLATES-->
-
+    
     <!--TEMPLATES END-->
 
     <script type="text/javascript">
@@ -146,11 +169,46 @@
     var topMenuViewModel = function(){
         var self = this;
 
-        this.errors = ko.observableArray();
+        this.errors    = ko.observableArray();
+        this.connected = ko.observable(false);
         this.commonStatus = ko.observable(false);
 
+        this.statusIcon = function(status){
+            if (status == 'ok'){
+                return 'check';
+            } else if (status == 'warn'){
+                return 'warning circle';
+            } else {
+                return 'warning sign';
+            }
+        };
+
+        this.statusColor = function(status){
+            var self = this;
+
+            if (self.connected()){
+                if (status == 'ok' || status == 'on'){
+                    return 'green';
+                } else if (status == 'warn' || status == 'off'){
+                    return 'orange';
+                } else {
+                    return 'red';
+                }
+            } else {
+                return '';
+            }
+        }.bind(this);
+
         io.socket.on('connect', function(){
+            self.connected(true);
+            self.loadStates();
             io.socket.get('/notifications/subscribe/statusUpdates');
+            swal.close();
+        });
+
+        io.socket.on('disconnect', function(){
+            self.connected(false);
+            swal("Oops!", "<%= __('Lost connection to server') %>", "error");
         });
 
         io.socket.on('statusUpdates',function(obj){
@@ -179,12 +237,9 @@
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }
-console.log(self.commonStatus().sensors());
             });
 
         }.bind(this);
-
-        this.loadStates();
 
     };
 

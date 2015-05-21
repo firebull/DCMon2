@@ -1,5 +1,5 @@
 {
-  "name": "DC Monitor 2",
+  "name": "DCMonitor2",
   "private": true,
   "version": "0.0.1",
   "description": "Monitor different equipment by IPMI, iLo or SNMP",

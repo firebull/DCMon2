@@ -12,12 +12,17 @@
 module.exports.bootstrap = function(cb) {
     var influx  = require('influx');
     var winston = require('winston');
-
+    var util = require('util');
+    var elasticsearch = require('elasticsearch');
     var elastical = require('elastical');
     var winstonElastic = require('winston-elasticsearch');
 
+    // Client for winstonElastic
     sails.elastical = new elastical.Client(sails.config.dcmon.elastical.host,
                                            {port: sails.config.dcmon.elastical.port});
+
+    var elasticHost = util.format('http://%s:%s', sails.config.dcmon.elastical.host, sails.config.dcmon.elastical.port);
+    sails.elastic = new elasticsearch.Client({host: elasticHost, log: 'error'});
 
     sails.influxClient = influx({
                               host : sails.config.dcmon.influx.host,

@@ -33,7 +33,10 @@ module.exports.routes = {
   ***************************************************************************/
 
   '/': 'EquipmentController.monitor',
-  '/notifications/subscribe/:roomName': 'NotificationsController.subscribe'
+  '/notifications/subscribe/:roomName': 'NotificationsController.subscribe',
+  '/events/confirm/:type/:id': 'EventsController.confirm',
+  '/events/delete/:type/:id': 'EventsController.delete',
+  '/events/comment/:type/:id': 'EventsController.comment'
 
   /***************************************************************************
   *                                                                          *

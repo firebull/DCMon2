@@ -149,10 +149,14 @@
                 <td data-bind="text: $root.statusByType[event._type]"></td>
                 <td data-bind="text: event._source['@message']"></td>
                 <td>
-                    <div class="mini icon ui primary buttons">
-                        <div title="<%= __('Confirm') %>" class="ui button"><i class="check icon"></i></div>
+                    <div class="mini icon ui buttons">
+                        <div title="<%= __('Confirm') %>" data-bind="event: {click: $root.eventConfirm.bind($data)}" class="ui button">
+                            <i class="check icon" data-bind="css: {'green': event._source.confirmed}"></i>
+                        </div>
                         <div title="<%= __('Leave comment') %>" class="ui button"><i class="comment icon"></i></div>
-                        <div title="<%= __('Delete') %>" class="ui button"><i class="remove circle icon"></i></div>
+                        <div title="<%= __('Delete') %>" data-bind="event: {click: $root.eventDelete.bind($data)}" class="ui button">
+                            <i class="remove red icon"></i>
+                        </div>
                     </div>
                 </td>
             </tr>
@@ -167,6 +171,8 @@
     var monitorEqViewModel = function(){
         var self = this;
 
+        this.connected    = ko.observable(false);
+        this.confirmActions = ko.observable(true);
         this.errors       = ko.observableArray();
         this.modalErrors  = ko.observableArray();
         this.loading      = ko.observable(false);
@@ -365,13 +371,75 @@
             io.socket.get('/equipment/events', eventsQuery, function(data, jwr){
 
                 if (jwr.statusCode == 200){
-
                     if (data.result !== null){
                         self.eventsParams({total: data.result.total});
                         if (Number(data.result.total) > 0){
-                            self.events(data.result.hits);
+                            _.forEach(data.result.hits, function(hit){
+                                hit._source.comment   = ko.observable(hit._source.comment);
+                                hit._source.confirmed = ko.observable(hit._source.confirmed);
+                                self.events.push(hit);
+                            });
                         }
-                        console.log(self.events());
+                    }
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+        }.bind(this);
+
+        this.eventConfirm = function(event){
+            var self = this;
+
+            if (event._source.confirmed() === false || event._source.confirmed() === undefined){
+                io.socket.get('/events/confirm/' + event._type + '/' + event._id, function(answer, jwr){
+                    if (jwr.statusCode == 200){
+                        if (answer.result == 'ok'){
+                            event._source.confirmed(true);
+                        } else if (answer.error){
+                            self.errors.push(answer.error);
+                        }
+                    } else {
+                        self.errors.push('ERROR: ' + jwr.statusCode);
+                    }
+                });
+            }
+
+        }.bind(this);
+
+        // Confirmation for delete action
+        this.eventDelete = function(event){
+            var self = this;
+
+            if (self.confirmActions() === true){
+                swal({  title: "<%= __('Delete the event?') %>",
+                        text: "   <div class='ui checkbox'><input type='checkbox'  id='dontConfirmCheck'/><label for='dontConfirmCheck'><%= __('Do not ask me more (until this window refreshed)') %></label> </div>",
+                        type: "warning",
+                        confirmButtonText: "<%= __('Yes, delete it') %>",
+                        cancelButtonText: "<%= __('Cancel') %>",
+                        html: true,
+                        showCancelButton: true },
+                    function(){
+                        if ($('#dontConfirmCheck').prop('checked')){
+                            self.confirmActions(false);
+                        }
+
+                        self.eventDeleteAction(event);
+                    });
+            } else {
+                self.eventDeleteAction(event);
+            }
+        }.bind(this);
+
+        this.eventDeleteAction = function(event){
+            var self = this;
+
+            io.socket.get('/events/delete/' + event._type + '/' + event._id, function(answer, jwr){
+                if (jwr.statusCode == 200){
+                    if (answer.result == 'ok'){
+                        self.events.remove(event);
+                    } else if (answer.error){
+                        self.errors.push(answer.error);
                     }
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
@@ -450,7 +518,7 @@
                     var dcs = [];
 
                     if (data !== undefined && data.length > 0){
-                        $.each(data, function(index, item){
+                        _.forEach(data, function(item){
                             item.errors = ko.observable(0);
                             item.warning = ko.observable(0);
                             dcs.push(ko.observable(item));

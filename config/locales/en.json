@@ -88,5 +88,9 @@
 	"Info": "Info",
 	"Emergency": "Emergency",
 	"Log level filter": "Log level filter",
-	"Date/Time filter": "Date/Time filter"
+	"Date/Time filter": "Date/Time filter",
+	"Lost connection to server": "Lost connection to server",
+	"Do not ask me more (until this window refreshed)": "Do not ask me more (until this window refreshed)",
+	"Delete the event?": "Delete the event?",
+	"Yes, delete it": "Yes, delete it"
 }

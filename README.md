@@ -32,8 +32,8 @@ npm install
 
 #### Configuration
 Add DB parameters to configuration files:
-    * MYSQL parameters to *config/connections.js*
-    * InfluxDB and Elasticsearch parameters to *config/dcmon.js*
+ * MYSQL parameters to *config/connections.js*
+ * InfluxDB and Elasticsearch parameters to *config/dcmon.js*
 
 #### Start the server
 ```bash

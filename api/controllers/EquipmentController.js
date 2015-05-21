@@ -106,7 +106,7 @@ module.exports = {
         if (!req.body || (req.body.from === undefined && req.body.to === undefined)){
             query.filtered = {
                                 filter: {
-                                          terms: { "level": levels}
+                                           exists : { field : "@timestamp" }
                                         }
                              };
         } else {
@@ -121,7 +121,7 @@ module.exports = {
                                                                         lt : to
                                                                     }
                                                                 }},
-                                                      { terms: { "level": levels} }
+                                                      { exists : { field : "@timestamp" }}
                                                     ]
                                             }
                                     }
@@ -154,22 +154,48 @@ module.exports = {
                                     };
         }
 
-        sails.elastical.search({    from: offset,
-                                    size: limit,
-                                    sort: [{'@timestamp' : {order: 'desc'}}],
-                                    query: query},
-                        function (err, results, rs){
+        async.waterfall([
+                // We need to check if any of logs exists as
+                // Elastic throws an exception trying to sort null results
+                function(callback){
+                    sails.elastic.searchExists({    index: 'logs',
+                                                    type: levels,
+                                                    from: offset,
+                                                    size: limit,
+                                                    body: {query: query}},
+                                            function (err, results){
+                                                    callback(err, results.exists);
+                                                });
+                },
+                function(exists, callback){
+                    if (exists){
+                        sails.elastic.search({  index: 'logs',
+                                                type: levels,
+                                                from: offset,
+                                                size: limit,
+                                                sort: ['@timestamp:desc'],
+                                                body: {query: query}},
+                                        function (err, results){
 
-                                if (err && err.length > 0){
-                                    return res.json({url: req.url, error: err});
-                                } else {
-                                    return res.json({url: req.url, result: results});
-                                }
-                            });
+                                                if (err && err.length > 0){
+                                                    return res.json({url: req.url, error: err});
+                                                } else {
+                                                    var data  = {total: results.hits.total};
+                                                    data.hits = results.hits.hits;
+
+                                                    return res.json({url: req.url, result: data});
+                                                }
+                                            });
+                    } else {
+                        return res.json({url: req.url, results: {total: 0}});
+                    }
+                }
+
+            ]);
     },
 
     getCommonStatus: function(req, res){
-      async.series({
+        async.series({
                         events: function(callback){
                             Equipment.query('SELECT count(*) AS `num`, `event_status` AS `status` FROM `equipment` WHERE `monitoring_enable` = true GROUP BY `event_status`',
                                 function(err, result){
@@ -183,7 +209,7 @@ module.exports = {
                                 });
                         },
                         power: function(callback){
-                            Equipment.query('SELECT count(*) AS `num`, `power_state` AS `state` FROM `equipment` WHERE `monitoring_enable` = true GROUP BY `power_state`',
+                            Equipment.query('SELECT count(*) AS `num`, `power_state` AS `status` FROM `equipment` WHERE `monitoring_enable` = true GROUP BY `power_state`',
                                 function(err, result){
                                     callback(err, result);
                                 });
