@@ -70,7 +70,6 @@ module.exports = {
    * `EventsController.delete()`
    */
   delete: function (req, res) {
-    console.log(req.params);
     if (req.params.type && req.params.id){
         sails.elastic.delete({
                                 index: 'logs',

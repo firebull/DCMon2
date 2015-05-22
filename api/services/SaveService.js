@@ -3,7 +3,7 @@ var format = require("string-template");
 
 module.exports = {
 
-    saveSensors: function(equipment, data){
+    saveSensors: function(equipment, data, cb){
         var influx = require('influx');
         var ip     = require('ip').toLong;
 
@@ -26,7 +26,7 @@ module.exports = {
             data.sensors.forEach(function(sensor){
                 // Prepare data for InfluxDB
                 saveData['ip' + ip(equipment.address) + '.' + sensor.name] = [{value: sensor.current,
-                                                                          time: sensor.timestamp}];
+                                                                               time: sensor.timestamp}];
 
                 // Parse for value limits and alert if needed
                 if (sensor.ignoreSensor === false){
@@ -47,9 +47,9 @@ module.exports = {
                             || sensor.current <= limits.min
                             || sensor.current >= limits.max)
                     {
-                        sails.dcmonLogger('alert', "Sensor '%s' is out of Range! Current: %s. Limits: [%s, %s].",
-                                                   sensor.name, sensor.current, limits.min, limits.max,
-                                                   {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                        sails.dcmonLogger.alert("Sensor '%s' is out of Range! Current: %s. Limits: [%s, %s].",
+                                                sensor.name, sensor.current, limits.min, limits.max,
+                                                {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
 
                         currentState.sensor_status = 'alert';
                         sensorsStates.alert[sensor.name] = sensor;
@@ -81,31 +81,47 @@ module.exports = {
 
             currentState.sensors_params = data.limits;
 
-            //ASYNC: Save equipment status to DB
-            Equipment.update({'id': equipment.id}, currentState, function(err, result){
-                if (err){
-                    sails.logger.error('Could not update equipment data in DB: %s', err,
-                                        {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
-
-                } else {
-                    Equipment.publishUpdate(equipment.id, {sensor_status: result[0].sensor_status, updatedAt: result[0].updatedAt});
-                }
-            });
-
-            //ASYNC: Save point data to InfluxDB
-            //console.log(saveData);
-            if (Object.keys(saveData).length > 0){
-                influxClient.writeSeries(saveData, function(err){
+            async.parallel([
+                            function(callback){
+                                //ASYNC: Save equipment status to DB
+                                Equipment.update({'id': equipment.id}, currentState, function(err, result){
+                                    if (err){
+                                        sails.dcmonLogger.emerg('Could not update equipment data in DB: %s', err,
+                                                                {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                        callback(err);
+                                    } else {
+                                        Equipment.publishUpdate(equipment.id, {sensor_status: result[0].sensor_status, updatedAt: result[0].updatedAt});
+                                        callback(null);
+                                    }
+                                });
+                            },
+                            function(callback){
+                                //ASYNC: Save point data to InfluxDB
+                                if (Object.keys(saveData).length > 0){
+                                    influxClient.writeSeries(saveData, function(err){
+                                        if (err){
+                                            sails.dcmonLogger.emerg('Could not save equipment sensors data in DB: %s', err,
+                                                                    {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                            callback(err);
+                                        } else {
+                                            Equipment.message(equipment.id, {message: 'sensorsUpdated'});
+                                            callback(null);
+                                        }
+                                    });
+                                } else {
+                                    sails.logger.info('%s (%s): No sensors data to save', equipment.name, equipment.address, {host: equipment.address, eq: eq.id});
+                                    callback(null);
+                                }
+                            },
+                           ],
+                function(err, results){
                     if (err){
-                        sails.logger.error('Could not save equipment sensors data in DB: %s', err,
-                                           {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                        cb(err);
                     } else {
-                        Equipment.message(equipment.id, {message: 'sensorsUpdated'});
+                        cb(null);
                     }
                 });
-            } else {
-                sails.logger.info('%s (%s): No sensors data to save', equipment.name, equipment.address, {host: equipment.address, eq: eq.id});
-            }
+
         }
     },
 

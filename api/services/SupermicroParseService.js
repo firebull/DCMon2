@@ -23,6 +23,8 @@
 
 var XRegExp = require('xregexp').XRegExp;
 var changeCase = require('change-case');
+var util = require('util');
+var moment = require('moment');
 
 module.exports = {
     sensors: function(rawData, callback){
@@ -96,5 +98,43 @@ module.exports = {
         });
 
         callback(false, result);
+    },
+
+    events: function(rawData, callback){
+
+        var pattern = XRegExp('^(?<id>\\s*[0-9a-z]+)\\s*\\|\\s+(?<month>\\d{2})\\/(?<day>\\d{1,2})\\/(?<year>\\d{4})\\s+\\|\\s+(?<hour>\\d{2})\\:(?<minutes>\\d{2})\\:(?<sec>\\d{2})\\s+\\|\\s+(?<sentype>.+)\\s+\\|\\s+(?<desc>.+)\\s+\\|\\s+(?<senvalue>.+)$', 'gi');
+        var splitted  = rawData.toString().split('\n');
+        var parsed, message, logDate, logTimestamp;
+        var result    = [];
+        var timestamp = moment().toISOString();
+
+        _.forEach(splitted, function(string){
+            parsed = XRegExp.exec(string, pattern);
+
+            if (parsed !== null){
+                message = util.format('Event occured: %s: %s. Message: %s',
+                                       parsed.sentype.trim(),
+                                       parsed.senvalue.trim(),
+                                       parsed.desc.trim());
+
+                logDate = util.format("%s-%s-%s %s:%s:%s", parsed.year.trim(),
+                                                           parsed.month.trim(),
+                                                           parsed.day.trim(),
+                                                           parsed.hour.trim(),
+                                                           parsed.minutes.trim(),
+                                                           parsed.sec.trim());
+
+                logTimestamp = moment(logDate).toISOString();
+
+            } else {
+                message = 'Unknown event: ' + string;
+                logTimestamp = timestamp;
+            }
+
+            result.push({msg: message, timestamp: logTimestamp});
+        });
+
+        callback(false, result);
+
     }
-}
+};

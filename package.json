@@ -26,11 +26,12 @@
     "grunt-contrib-coffee": "~0.10.1",
     "xregexp": "~2.0.0",
     "winston": "*",
-    "winston-elasticsearch": "*",
     "influx": "~3.4.0",
     "ip": "~0.3.2",
     "string-template": "~0.2.1",
-    "change-case": "*"
+    "change-case": "*",
+    "elasticsearch": "*",
+    "moment": "*"
   },
   "scripts": {
     "start": "node app.js",

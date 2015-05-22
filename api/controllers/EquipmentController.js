@@ -55,7 +55,6 @@ module.exports = {
                 influxClient.query(query, function(err, data){
                     return res.json({sensors: data});
                 });
-
             }
         });
     },
@@ -221,14 +220,13 @@ module.exports = {
                         } else {
                             return res.json({url: req.url, result: results});
                         }
-
                    }
                 );
     },
 
     testQuery: function(req, res){
 
-        QueryService.querySensors(function(err, result){
+        QueryService.queryEqs(function(err, result){
             return res.json({url: req.url, data: result});
         });
     }

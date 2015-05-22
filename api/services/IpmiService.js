@@ -1,13 +1,19 @@
-var util = require('util');
+var changeCase = require('change-case');
 
 function ipmiShell(q, callback){
     var spawn = require('child_process').spawn;
 
-    var ipmitool = spawn('ipmitool', [  '-I', q.proto,
-                                        '-H', q.address,
-                                        '-U', q.login,
-                                        '-P', q.password,
-                                        q.command]);
+    var params = [  '-I', q.proto,
+                    '-H', q.address,
+                    '-U', q.login,
+                    '-P', q.password,
+                 ];
+
+    _.each(q.command, function(command){
+        params.push(command);
+    });
+
+    var ipmitool = spawn('ipmitool', params);
 
     var err     = [],
         result  = "";
@@ -60,7 +66,7 @@ module.exports = {
                 return callback(err, {});
             }
 
-            parser = eval(equipment.vendor.charAt(0).toUpperCase() + equipment.vendor.slice(1) + 'ParseService');
+            parser = eval(changeCase.pascal(equipment.vendor + 'ParseService'));
 
             parser.sensors(data, function(err, parsed){
                 var currentStatus  = {};
@@ -98,10 +104,42 @@ module.exports = {
                     currentStatus.sensors_params = sensors_params;
                 }
 
-                callback(false, {'sensors': parsed.sensors, 'limits': sensors_params});
+                callback(null, {'sensors': parsed.sensors, 'limits': sensors_params});
 
             });
         });
+
+    },
+
+    queryEvents: function(equipment, callback){
+
+        var query = {'address':  equipment.address,
+                     'login':    equipment.login,
+                     'password': equipment.password,
+                     'command': ['sel', 'elist']
+                     };
+        var parser;
+
+        if (equipment.sensors_proto == 'ipmi'){
+            query.proto = 'lan';
+        } else if (equipment.sensors_proto == 'ipmiv2'){
+            query.proto = 'lanplus';
+        }
+
+        ipmiShell(query, function(err, data){
+
+            if (err.length > 0){
+                return callback(err, {});
+            }
+
+            parser = eval(changeCase.pascal(equipment.vendor + 'ParseService'));
+
+            parser.events(data, function(err, parsed){
+                callback(null, parsed);
+            });
+
+        });
+
 
     }
 };

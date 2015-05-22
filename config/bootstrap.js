@@ -14,12 +14,8 @@ module.exports.bootstrap = function(cb) {
     var winston = require('winston');
     var util = require('util');
     var elasticsearch = require('elasticsearch');
-    var elastical = require('elastical');
-    var winstonElastic = require('winston-elasticsearch');
+    var winstonElastic = require('../api/dcmon/winston-elasticsearch/index');
 
-    // Client for winstonElastic
-    sails.elastical = new elastical.Client(sails.config.dcmon.elastical.host,
-                                           {port: sails.config.dcmon.elastical.port});
 
     var elasticHost = util.format('http://%s:%s', sails.config.dcmon.elastical.host, sails.config.dcmon.elastical.port);
     sails.elastic = new elasticsearch.Client({host: elasticHost, log: 'error'});
@@ -38,23 +34,41 @@ module.exports.bootstrap = function(cb) {
         levels: {
             emerg:  0,
             alert:  1,
-            crit:   2
+            crit:   2,
+            warn:   4
         },
         colors: {
             emerg: 'red',
             alert: 'red',
-            crit:  'red'
+            crit:  'red',
+            warn:  'orange'
         }
       };
 
     sails.dcmonLogger = new (winston.Logger)({
         levels: dcmonLevels.levels,
         transports: [
+            new (winston.transports.Console)({
+              name: 'emerg-console',
+              timestamp: true,
+              prettyPrint: true,
+              colorize: true,
+              level: 'emerg'
+            }),
             new (winston.transports.File)({
               name: 'info-emerg',
               filename: 'dcmon-emerg.log',
               level: 'emerg',
               maxFiles: 5
+            }),
+            // Elasticsearch
+            new (winstonElastic)({
+              name: 'emerg-elastic',
+              timestamp: true,
+              level: 'emerg',
+              client: sails.elastic,
+              disable_fields: true,
+              source: 'DC Monitor 2'
             }),
         ]});
 
@@ -87,7 +101,7 @@ module.exports.bootstrap = function(cb) {
           name: 'info-elastic',
           timestamp: true,
           level: 'info',
-          client: sails.elastical,
+          client: sails.elastic,
           disable_fields: true,
           source: 'DC Monitor 2'
         }),
@@ -95,11 +109,11 @@ module.exports.bootstrap = function(cb) {
     });
 
     setInterval(function(){
-        QueryService.querySensors(function(err, result){
-            sails.logger.info('Sensors query finished');
+        QueryService.queryEqs(function(err, result){
+            sails.logger.info('Query finished');
             sails.sockets.blast('statusUpdates', {message: 'sensorsUpdated'});
             if (err){
-                sails.logger.error('Could not query sensors: %s', err);
+                sails.logger.error('Could not finish query: %s', err);
             }
         });
     }, 180000);

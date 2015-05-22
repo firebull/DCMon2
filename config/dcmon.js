@@ -22,6 +22,9 @@ module.exports.dcmon = {
 
     elastical: { host : 'localhost',
                  port : 9200
-               }
+               },
+
+    // Number of parallel threads of quering equipments
+    numOfThreads: 50
 
 };
