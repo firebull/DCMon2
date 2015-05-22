@@ -462,9 +462,9 @@
 
         this.resetFilter = function(index, eq){
             this.eventsRange('last');
-            this.minQueryDate = ko.observable(moment().subtract(2, 'hours').format('YYYY-MM-DD HH:mm'));
-            this.maxQueryDate = ko.observable(moment().format('YYYY-MM-DD HH:mm'));
-            this.logLevels    = ko.observableArray(['emerg', 'alert', 'crit', 'warn', 'error']);
+            this.minQueryDate(moment().subtract(2, 'hours').format('YYYY-MM-DD HH:mm'));
+            this.maxQueryDate(moment().format('YYYY-MM-DD HH:mm'));
+            this.logLevels(['emerg', 'alert', 'crit', 'warn', 'error']);
 
             if (self.detailsTab() == 'events'){
                 self.loadEvents();
