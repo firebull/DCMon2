@@ -210,8 +210,9 @@
         this.selectDc = function(dc){
             var self = this;
 
-            self.racks([]);
-            self.eqs([]);
+            self.selectedEq(-1);
+            self.eqs.removeAll();
+            self.racks.removeAll();
             self.selectedDc(dc.id);
             var racks = [];
             $.each(dc.racks, function(index, item){
@@ -230,7 +231,8 @@
         this.selectRack = function(rack){
             var self = this;
 
-            self.eqs([]);
+            self.selectedEq(-1);
+            self.eqs.removeAll();
             self.selectedRack(rack.id);
 
             var eqQuery = {sort: 'name'};
