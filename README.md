@@ -41,4 +41,7 @@ forever start app.js --prod
 ```
 Go to http://localhost/config/eq (or your real host address) and add Datacenter, Rackmount and equipment. *For now only Supermicro servers and IPMI protocol supported*.
 
+*Login:* admin
+*Password:* Admin12345
+
 a [Sails](http://sailsjs.org) application

@@ -26,7 +26,66 @@ module.exports.policies = {
   *                                                                          *
   ***************************************************************************/
 
-  // '*': true,
+  '*': [
+    'passport',
+    'sessionAuth',
+  ],
+
+  'auth': {
+    '*': ['passport']
+  },
+
+  'ConfigController': {
+    '*': ['passport', 'sessionAuth', 'isAdmin']
+  },
+
+  'GroupController': {
+    '*'      : ['passport', 'sessionAuth'],
+    'find'   : ['passport', 'sessionAuth', 'isManager'],
+    'destroy': false,
+    'update' : false,
+    'create' : false
+  },
+
+  'UserController': {
+    '*'      : ['passport', 'sessionAuth', 'isAdmin'],
+    'me'     : ['passport', 'sessionAuth'],
+    'find'   : ['passport', 'sessionAuth', 'isManager'],
+    'destroy': ['passport', 'sessionAuth', 'isAdmin'],
+    'update' : ['passport', 'sessionAuth', 'isProfileOwner','isManager'],
+    'create' : ['passport', 'sessionAuth', 'isAdmin']
+  },
+
+  'DatacenterController': {
+    '*'      : ['passport', 'sessionAuth'],
+    'destroy': ['passport', 'sessionAuth', 'isAdmin'],
+    'update' : ['passport', 'sessionAuth', 'isManager'],
+    'create' : ['passport', 'sessionAuth', 'isManager']
+  },
+
+  'RackMountController': {
+    '*'      : ['passport', 'sessionAuth'],
+    'destroy': ['passport', 'sessionAuth', 'isAdmin'],
+    'update' : ['passport', 'sessionAuth', 'isManager'],
+    'create' : ['passport', 'sessionAuth', 'isManager']
+  },
+
+  'EquipmentController': {
+    '*'      : ['passport', 'sessionAuth'],
+    'destroy': ['passport', 'sessionAuth', 'isAdmin'],
+    'update' : ['passport', 'sessionAuth', 'isManager'],
+    'create' : ['passport', 'sessionAuth', 'isManager']
+  },
+
+  'EventsController': {
+    '*'       : ['passport', 'sessionAuth', 'isAdmin'],
+    'comment' : ['passport', 'sessionAuth'],
+    'confirm' : ['passport', 'sessionAuth'],
+    'delete'  : ['passport', 'sessionAuth', 'isAdmin']
+  },
+
+
+
 
   /***************************************************************************
   *                                                                          *

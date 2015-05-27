@@ -16,6 +16,12 @@ module.exports = {
     return res.view({'url': req.url});
   },
 
+  /**
+   * `ConfigController.users()`
+   */
+  users: function (req, res) {
+    return res.view({'url': req.url});
+  },
 
   /**
    * `ConfigController.options()`

@@ -118,6 +118,53 @@ module.exports.bootstrap = function(cb) {
         });
     }, 180000);
 
+    sails.services.passport.loadStrategies();
+
+    // Create default groups
+    Group.find().exec(function(err, admins){
+        if (admins.length === 0){
+            var groups = [
+                {id: 1, name: 'admins', description: 'Administrators'},
+                {id: 2, name: 'managers', description: 'Managers'},
+                {id: 3, name: 'monitors', description: 'Monitoring Users'},
+            ];
+
+            Group.create(groups, function(err, created){
+                if (err){
+                    sails.log.error('Could not create groups for users: %s. Auth WILL NOT WORK!!!', err);
+                }
+            });
+        }
+    });
+
+    // Create deafult Admin user
+    User.findOne({username: 'admin'}).exec(function(err, user){
+        if (!user){
+            var admin = {username: 'admin',
+                         first_name: 'Administrator',
+                         email: 'admin@local.local',
+                         group: 1};
+
+            User.create(admin, function(err, created){
+                if (err){
+                    sails.log.error('Could not create admin user: %s. You wont be able to login!', err);
+                } else {
+                    var userPassport = { password: 'Admin12345',
+                                         user: created.id,
+                                         protocol: 'local'};
+
+                    Passport.create(userPassport).exec(function(err, passport){
+                        if (err){
+                            sails.log.error('Could not create passport for admin user: %s. You wont be able to login!', err);
+                        } else {
+                            sails.log('Admin user is created. Login: "%s", Password: "%s"', admin.username, userPassport.password);
+                        }
+                    });
+                }
+            });
+        }
+    });
+
     // It's very important to trigger this callback method when you are finished
     // with the bootstrap!  (otherwise your server will never lift, since it's waiting on the bootstrap)
     cb();

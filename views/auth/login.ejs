@@ -1,0 +1,29 @@
+<% if (errors.length > 0) {%>
+    <div class="ui error message">
+        <ul class="ui list">
+            <% errors.forEach(function (error) { %>
+                <li><%= __(error) %></li>
+            <% }) %>
+        </ul>
+    </div>
+<% } %>
+
+<form role="form" action="/auth/local" method="post" class="ui form segment">
+    <div class="field">
+        <label><%= __('Username or Email') %></label>
+        <input type="text" name="identifier" placeholder="<%= __('Example: superuser or root@example.com') %>">
+    </div>
+    <div class="field">
+        <label><%= __('Password') %></label>
+        <input type="password" name="password" placeholder="<%= __('Type password here') %>">
+    </div>
+    <button class="ui fluid primary button" type="submit">Sign in</button>
+</form>
+
+<% if (Object.keys(providers).length) {%>
+  <h4>You can also use one of these...</h4>
+
+  <% Object.keys(providers).forEach(function (key) { %>
+    <a href="/auth/<%= providers[key].slug %>" role="button"><%= providers[key].name %></a>
+  <% }) %>
+<% } %>

@@ -23,7 +23,7 @@ module.exports = {
 
         Equipment.findOne({'id': req.params.id}).exec(function(err, eq){
             if (err){
-                sails.logger.error('Could not get equipment ID %s: %s', req.id, err);
+                sails.logger.error('Could not get equipment ID %s: %s', req.params.id, err);
                 return res.json();
             } else {
 

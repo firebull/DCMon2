@@ -32,6 +32,12 @@ module.exports.routes = {
   *                                                                          *
   ***************************************************************************/
 
+  'get /login': {controller: 'AuthController', action: 'login', locals: {layout: 'login'}},
+  'get /logout': {controller: 'AuthController', action: 'logout', locals: {layout: 'login'}},
+
+  'post /auth/local': 'AuthController.callback',
+  'post /auth/local/:action': 'AuthController.callback',
+
   '/': 'EquipmentController.monitor',
   '/notifications/subscribe/:roomName': 'NotificationsController.subscribe',
   '/events/confirm/:type/:id': 'EventsController.confirm',

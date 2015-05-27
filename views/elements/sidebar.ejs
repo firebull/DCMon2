@@ -7,6 +7,10 @@
         <i class="settings icon"></i>
         <%= __('Configuration') %>
     </a>
+    <a href="/config/users" class="<% if (url === '/config/users') { %>active item<% } else { %>item<% }%>">
+        <i class="users icon"></i>
+        <%= __('Users') %>
+    </a>
     <a href="/config/options" class="<% if (url === '/config/options') { %>active item<% } else { %>item<% }%>">
         <i class="configure icon"></i>
         <%= __('Options') %>

@@ -56,7 +56,55 @@
             </div>
         </div>
     </div>
+    <div class="ui small modal" id="commentModal">
+        <i class="close icon"></i>
+        <div class="header"><%= __('Add comment to event') %></div>
+        <div class="content" data-bind="if: commentModalData">
+            <div class="description" data-bind="template: {data: commentModalData,
+                                                           name: 'comment-form'}"></div>
+        </div>
+        <div class="actions">
+            <div class="ui button"><%= __('Close') %></div>
+        </div>
+    </div>
 </div>
+<script type="text/html" id="comment-form">
+    <div class="ui icon message" data-bind="css: $root.eqEventColor(_type, false)">
+        <i class="icon" data-bind="css: $root.eventIcon(_type)"></i>
+        <div class="content">
+            <div class="header" data-bind="text: _.capitalize(_type)"></div>
+            <span data-bind="text: moment(_source['@timestamp']).format('HH:mm:ss DD/MM/YY')"></span>
+            <p data-bind="text: _source['@message']"></p>
+        </div>
+    </div>
+    <!-- ko if: _source.comment().length == 0 -->
+    <div class="ui segment">
+        <%= __('No comments yet') %>
+    </div>
+    <!-- /ko -->
+    <div class="ui comments">
+    <!-- ko foreach: _source.comment() -->
+        <div class="comment">
+            <div class="content">
+                <a class="author" data-bind="text: username"></a>
+                <div class="metadata">
+                    <div class="date" data-bind="text: moment(timestamp).format('HH:mm:ss DD/MM/YY')"></div>
+                </div>
+                <div class="text" data-bind="text: _.unescape(comment)"></div>
+            </div>
+
+        </div>
+    <!-- /ko -->
+        <div class="ui reply form">
+            <div class="field">
+              <textarea data-bind="value: $root.newComment"></textarea>
+            </div>
+            <button data-bind="event: {click: $root.saveComment.bind(false)}" class="ui primary submit labeled icon button">
+                <i class="icon edit"></i> <%= __('Add Comment') %>
+            </button>
+        </div>
+    </div>
+</script>
 <script type="text/html" id="eq-template">
     <div class="ui dividing header">
         <div class="content">
@@ -144,7 +192,7 @@
     </div>
     <table class="ui very compact small table" data-bind="visible: $root.events().length > 0">
         <tbody data-bind="foreach: {data: $root.events, as: 'event'}">
-            <tr data-bind="css: $root.eqEventColor(event._type)">
+            <tr data-bind="css: $root.eqEventColor(event._type, event._source.confirmed())">
                 <td data-bind="text: moment(event._source['@timestamp']).format('HH:mm:ss DD/MM/YY')"></td>
                 <td data-bind="text: $root.statusByType[event._type]"></td>
                 <td data-bind="text: event._source['@message']"></td>
@@ -153,7 +201,9 @@
                         <div title="<%= __('Confirm') %>" data-bind="event: {click: $root.eventConfirm.bind($data)}" class="ui button">
                             <i class="check icon" data-bind="css: {'green': event._source.confirmed}"></i>
                         </div>
-                        <div title="<%= __('Leave comment') %>" class="ui button"><i class="comment icon"></i></div>
+                        <div title="<%= __('Leave comment') %>" data-bind="event: {click: $root.eventComment.bind($data)}" class="ui button">
+                            <i class="comment icon" data-bind="css: {'green': event._source.comment().length > 0}"></i>
+                        </div>
                         <div title="<%= __('Delete') %>" data-bind="event: {click: $root.eventDelete.bind($data)}" class="ui button">
                             <i class="remove red icon"></i>
                         </div>
@@ -188,6 +238,8 @@
         this.eqGraphs     = ko.observableArray();
         this.sensorsParams = ko.observable(false);
         this.detailsTab   = ko.observable('events');
+        this.commentModalData = ko.observable(false);
+        this.newComment = ko.observable("");
 
         // Filter params
         this.minQueryDate = ko.observable(moment().subtract(2, 'hours').format('YYYY-MM-DD HH:mm'));
@@ -248,6 +300,8 @@
                     }
 
                     self.eqs(eqs);
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }
@@ -301,7 +355,8 @@
                     eq = self.eqs()[self.selectedEq()]();
                     self.sensorsParams(eq.sensors_params);
                     self.eqGraphs(data.sensors);
-
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }
@@ -377,12 +432,14 @@
                         self.eventsParams({total: data.result.total});
                         if (Number(data.result.total) > 0){
                             _.forEach(data.result.hits, function(hit){
-                                hit._source.comment   = ko.observable(hit._source.comment);
+                                hit._source.comment   = ko.observableArray(hit._source.comment);
                                 hit._source.confirmed = ko.observable(hit._source.confirmed);
                                 self.events.push(hit);
                             });
                         }
                     }
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }
@@ -401,6 +458,8 @@
                         } else if (answer.error){
                             self.errors.push(answer.error);
                         }
+                    } else if (jwr.statusCode == 401){
+                        window.location.href = "/login";
                     } else {
                         self.errors.push('ERROR: ' + jwr.statusCode);
                     }
@@ -438,16 +497,50 @@
 
             io.socket.get('/events/delete/' + event._type + '/' + event._id, function(answer, jwr){
                 if (jwr.statusCode == 200){
-                    if (answer.result == 'ok'){
-                        self.events.remove(event);
-                    } else if (answer.error){
-                        self.errors.push(answer.error);
-                    }
+                    self.events.remove(event);
+                } else if (jwr.status == 400 && answer.error){
+                    self.errors.push(answer.error);
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }
             });
 
+        }.bind(this);
+
+        this.eventComment = function(event){
+            var self = this;
+
+            self.commentModalData(event);
+            self.newComment("");
+
+            $('#commentModal').modal({onHide: function(){
+                                        self.newComment("");
+                                        self.commentModalData(false);
+                                        }
+                                }).modal('show').modal('refresh');
+
+        }.bind(this);
+
+        this.saveComment = function(){
+            var self = this;
+            if (self.newComment().length > 0){
+                io.socket.get('/events/comment/' + self.commentModalData()._type + '/' + self.commentModalData()._id,
+                              {comment: self.newComment()},
+                    function(answer, jwr){
+                        if (jwr.statusCode == 200){
+                            self.newComment("");
+                            self.commentModalData()._source.comment(answer._source.comment);
+                        } else if (jwr.status == 400 && answer.error){
+                            self.errors(answer.error);
+                        } else if (jwr.statusCode == 401){
+                            window.location.href = "/login";
+                        } else {
+                            self.errors.push('ERROR: ' + jwr.statusCode);
+                        }
+                });
+            }
         }.bind(this);
 
         this.filter = function(index, eq){
@@ -492,9 +585,12 @@
 
         }.bind(this);
 
-        this.eqEventColor = function(level){
+        this.eqEventColor = function(level, confirmed){
 
-            if (level == 'warn'){
+            if (confirmed === true){
+                return '';
+            }
+            else if (level == 'warn'){
                 return 'warning';
             } else if (level != 'info' && level != 'warn'){
                 return 'error';
@@ -503,6 +599,16 @@
             }
 
         }.bind(this);
+
+        this.eventIcon = function(level){
+            if (level == 'info'){
+                return 'info sign';
+            } else if (level == 'warn'){
+                return 'warning circle';
+            } else {
+                return 'warning sign';
+            }
+        };
 
         this.monitoringIcon = function(enable){
             return enable ? 'checkmark green' : 'minus';
@@ -531,6 +637,8 @@
                     }
 
                     self.dcs(dcs);
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }

@@ -362,14 +362,15 @@
 
         this.dcForm = function(id){
             var self = this;
+            var title;
 
             if (id === false){
-                var title = "<%= __('Add new DataCenter') %>";
+                title = "<%= __('Add new DataCenter') %>";
                 var fields = {name: "", description: ""};
 
                 self.modalData(fields);
             } else {
-                var title = "<%= __('Update DataCenter') %>";
+                title = "<%= __('Update DataCenter') %>";
 
                 self.modalData(self.dcs()[id]());
                 self.modalDataIndex(id);
@@ -381,16 +382,17 @@
 
         this.rackForm = function(id){
             var self = this;
+            var title;
 
             if (id === false){
-                var title = "<%= __('Add new RackMount') %>";
+                title = "<%= __('Add new RackMount') %>";
                 var fields = {name: "",
                               description: "",
                               datacenter: {id: undefined}};
 
                 self.modalData(fields);
             } else {
-                var title = "<%= __('Update RackMount') %>";
+                title = "<%= __('Update RackMount') %>";
 
                 self.modalData(self.racks()[id]());
                 self.modalDataIndex(id);
@@ -402,9 +404,10 @@
 
         this.eqForm = function(id){
             var self = this;
+            var title;
 
             if (id === false){
-                var title = "<%= __('Add new Equipment') %>";
+                title = "<%= __('Add new Equipment') %>";
                 var fields = {name: "",
                               description: "",
                               rackmount: {id: undefined},
@@ -424,7 +427,7 @@
 
                 self.modalData(fields);
             } else {
-                var title = "<%= __('Update Equipment') %>";
+                title = "<%= __('Update Equipment') %>";
 
                 self.modalData(self.equipments()[id]());
                 self.modalDataIndex(id);
@@ -446,21 +449,21 @@
                 dataToSave = ko.toJS(self.modalData());
 
                 if (url == 'datacenter'){
-                    dataToSave['racks'] = [];
+                    dataToSave.racks = [];
                 } else if (url == 'rackmount'){
 
-                    delete(dataToSave['equipment']);
+                    delete(dataToSave.equipment);
 
                     if (self.modalData().datacenter === undefined){
-                        delete(dataToSave['datacenter']);
+                        delete(dataToSave.datacenter);
                     } else {
-                        dataToSave['datacenter'] = self.modalData().datacenter.id;
+                        dataToSave.datacenter = self.modalData().datacenter.id;
                     }
                 } else if (url == 'equipment'){
                     if (self.modalData().rackmount === undefined){
-                        delete(dataToSave['rackmount']);
+                        delete(dataToSave.rackmount);
                     } else {
-                        dataToSave['rackmount'] = self.modalData().rackmount.id;
+                        dataToSave.rackmount = self.modalData().rackmount.id;
                     }
                 }
 
@@ -511,7 +514,7 @@
 
             io.socket.delete('/datacenter', {'id': dc.id}, function(data, jwr){
                 if (jwr.statusCode == 200){
-                    self.dcs.remove(function(item){ return item().id == dc.id });
+                    self.dcs.remove(function(item){ return item().id == dc.id; });
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }
@@ -534,6 +537,8 @@
                     }
 
                     self.dcs(dcs);
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }
@@ -556,6 +561,8 @@
                     }
 
                     self.racks(racks);
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }
@@ -578,6 +585,8 @@
                     }
 
                     self.equipments(equipments);
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }

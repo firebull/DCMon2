@@ -70,6 +70,7 @@
     <script src="/js/dependencies/semantic.min.js"></script>
     <script src="/js/dependencies/smooth-plotter.js"></script>
     <script src="/js/dependencies/sweetalert.min.js"></script>
+    <script src="/js/dependencies/trianglify.min.js"></script>
     <!--SCRIPTS END-->
 
   </head>
@@ -109,6 +110,60 @@
         </div>
 
         <!-- /ko -->
+
+        <div class="right menu">
+            <div class="ui topmenu dropdown item" data-bind="if: me">
+                <i class="user icon"></i>
+                <span data-bind="text: me().username"></span>
+                <i class="dropdown icon"></i>
+                <div class="menu">
+                    <div class="header text item">
+                       <%= __('Profile') %>
+                    </div>
+                    <div class="text item">
+                        <div class="ui list">
+                            <div class="item">
+                                <i class="circle icon"></i>
+                                <div class="content">
+                                    ID <span data-bind="text: me().id"></span>
+                                </div>
+
+                            </div>
+                            <div class="item">
+                                <i class="user icon"></i>
+                                <div class="content">
+                                    <span data-bind="text: me().first_name"></span>
+                                    <span data-bind="text: me().last_name"></span>
+                                </div>
+                            </div>
+                            <div class="item">
+                                <i class="envelope icon"></i>
+                                <div class="content">
+                                    <span data-bind="text: me().email"></span>
+                                </div>
+                            </div>
+                            <div class="item">
+                                <i class="unlock alternate icon"></i>
+                                <div class="content">
+                                    <span data-bind="text: me().group.description"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ui topmenu dropdown item">
+                <i class="flag icon"></i>
+                <i class="dropdown icon"></i>
+                <div class="menu" data-bind="foreach: langs">
+                    <a class="item" data-bind="text: name, event: {click: $root.selectLang.bind($data)}"></a>
+                </div>
+            </div>
+            <a class="ui item" href="/logout">
+              <%= __('Logout') %>
+              <i class="sign out icon"></i>
+            </a>
+        </div>
     </div>
     <%- partial ('elements/sidebar.ejs') %>
     <div class="ui black big launch right attached fixed button" id="sidebarToggle">
@@ -165,6 +220,7 @@
         $('#sidebarToggle').click(function(){
             $('#sidebar').sidebar('toggle');
         });
+        $('.topmenu.dropdown').dropdown({action: 'hide'});
 
     var topMenuViewModel = function(){
         var self = this;
@@ -172,6 +228,9 @@
         this.errors    = ko.observableArray();
         this.connected = ko.observable(false);
         this.commonStatus = ko.observable(false);
+        this.me        = ko.observable(false);
+
+        this.langs     = <%- JSON.stringify(HelperService.langsArray()) %>;
 
         this.statusIcon = function(status){
             if (status == 'ok'){
@@ -197,6 +256,13 @@
             } else {
                 return '';
             }
+        }.bind(this);
+
+        this.selectLang = function(lang){
+            var self = this;
+
+            // TODO: Make lang select
+
         }.bind(this);
 
         io.socket.on('connect', function(){
@@ -234,6 +300,19 @@
 
                         self.commonStatus(states);
                     }
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+            io.socket.get('/user/me', function(data, jwr){
+                if (jwr.statusCode == 200){
+                    console.log(data);
+                    self.me(data);
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }

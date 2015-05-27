@@ -1,5 +1,15 @@
 module.exports = {
 
+    langsArray: function(){
+        return [{id: 'en', name: 'English'},
+                {id: 'ru', name: 'Русский'}];
+    },
+
+    langsByName: function(){
+        return {en: 'English',
+                ru: 'Русский'};
+    },
+
     powerStatesByType: function(req){
         var lang = req.getLocale();
 
@@ -78,5 +88,6 @@ module.exports = {
         });
 
         return list;
-    }
+    },
+
 };
