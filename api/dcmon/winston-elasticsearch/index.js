@@ -64,6 +64,7 @@ Elasticsearch.prototype.log = function log( level, msg, meta, callback ) {
   // Using some Logstash naming conventions. (https://gist.github.com/jordansissel/2996677) with some useful variables for debugging.
   var entry = {
     level: level,
+    confirmed: false,
     '@source': self.source,
     '@message': msg
   };

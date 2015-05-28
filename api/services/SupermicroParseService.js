@@ -102,9 +102,10 @@ module.exports = {
 
     events: function(rawData, callback){
 
-        var pattern = XRegExp('^(?<id>\\s*[0-9a-z]+)\\s*\\|\\s+(?<month>\\d{2})\\/(?<day>\\d{1,2})\\/(?<year>\\d{4})\\s+\\|\\s+(?<hour>\\d{2})\\:(?<minutes>\\d{2})\\:(?<sec>\\d{2})\\s+\\|\\s+(?<sentype>.+)\\s+\\|\\s+(?<desc>.+)\\s+\\|\\s+(?<senvalue>.+)$', 'gi');
+        var pattern = XRegExp.cache('^(?<id>\\s*[0-9a-z]+)\\s*\\|\\s+(?<month>\\d{2})\\/(?<day>\\d{1,2})\\/(?<year>\\d{4})\\s+\\|\\s+(?<hour>\\d{2})\\:(?<minutes>\\d{2})\\:(?<sec>\\d{2})\\s+\\|\\s+(?<sentype>.+)\\s+\\|\\s+(?<desc>.+)\\s+\\|\\s+(?<senvalue>.+)$', 'gi');
+        var levelPattern = XRegExp.cache('((?<emerg>failure)|(?<alert>alert)|(?<crit>critical)|(?<error>error))', 'gi');
         var splitted  = rawData.toString().split('\n');
-        var parsed, message, logDate, logTimestamp;
+        var parsed, parsedLevels, message, logDate, logTimestamp, logLevel;
         var result    = [];
         var timestamp = moment().toISOString();
 
@@ -127,11 +128,31 @@ module.exports = {
                 logTimestamp = moment(logDate).toISOString();
 
             } else {
-                message = 'Unknown event: ' + string;
-                logTimestamp = timestamp;
+                if (string.trim() !== ''){
+                    message = 'Unknown event: ' + string;
+                    logTimestamp = timestamp;
+                }
             }
 
-            result.push({msg: message, timestamp: logTimestamp});
+            // Guess log level
+            // Will do it here as I do not know yet how will it be done
+            // for other vendors and equipment types
+            parsedLevels = XRegExp.exec(string, levelPattern);
+            logLevel = 'warn';
+
+            if (parsedLevels){
+                if (parsedLevels.emerg !== undefined){
+                    logLevel = 'emerg';
+                } else if (parsedLevels.crit){
+                    logLevel = 'crit';
+                } else if (parsedLevels.alert){
+                    logLevel = 'alert';
+                } else if (parsedLevels.error){
+                    logLevel = 'error';
+                }
+            }
+
+            result.push({msg: message, timestamp: logTimestamp, level: logLevel});
         });
 
         callback(false, result);

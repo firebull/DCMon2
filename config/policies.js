@@ -28,83 +28,61 @@ module.exports.policies = {
 
   '*': [
     'passport',
+    'localize',
     'sessionAuth',
   ],
 
   'auth': {
-    '*': ['passport']
+    '*': ['passport', 'localize']
   },
 
   'ConfigController': {
-    '*': ['passport', 'sessionAuth', 'isAdmin']
+    '*': ['passport', 'localize', 'sessionAuth', 'isAdmin']
   },
 
   'GroupController': {
-    '*'      : ['passport', 'sessionAuth'],
-    'find'   : ['passport', 'sessionAuth', 'isManager'],
+    '*'      : ['passport', 'localize', 'sessionAuth'],
+    'find'   : ['passport', 'localize', 'sessionAuth', 'isManager'],
     'destroy': false,
     'update' : false,
     'create' : false
   },
 
   'UserController': {
-    '*'      : ['passport', 'sessionAuth', 'isAdmin'],
-    'me'     : ['passport', 'sessionAuth'],
-    'find'   : ['passport', 'sessionAuth', 'isManager'],
-    'destroy': ['passport', 'sessionAuth', 'isAdmin'],
-    'update' : ['passport', 'sessionAuth', 'isProfileOwner','isManager'],
-    'create' : ['passport', 'sessionAuth', 'isAdmin']
+    '*'      : ['passport', 'localize', 'sessionAuth', 'isAdmin'],
+    'me'     : ['passport', 'localize', 'sessionAuth'],
+    'find'   : ['passport', 'localize', 'sessionAuth', 'isManager'],
+    'destroy': ['passport', 'localize', 'sessionAuth', 'isAdmin'],
+    'update' : ['passport', 'localize', 'sessionAuth', 'isProfileOwner','isManager'],
+    'create' : ['passport', 'localize', 'sessionAuth', 'isAdmin']
   },
 
   'DatacenterController': {
-    '*'      : ['passport', 'sessionAuth'],
-    'destroy': ['passport', 'sessionAuth', 'isAdmin'],
-    'update' : ['passport', 'sessionAuth', 'isManager'],
-    'create' : ['passport', 'sessionAuth', 'isManager']
+    '*'      : ['passport', 'localize', 'sessionAuth'],
+    'destroy': ['passport', 'localize', 'sessionAuth', 'isAdmin'],
+    'update' : ['passport', 'localize', 'sessionAuth', 'isManager'],
+    'create' : ['passport', 'localize', 'sessionAuth', 'isManager']
   },
 
   'RackMountController': {
-    '*'      : ['passport', 'sessionAuth'],
-    'destroy': ['passport', 'sessionAuth', 'isAdmin'],
-    'update' : ['passport', 'sessionAuth', 'isManager'],
-    'create' : ['passport', 'sessionAuth', 'isManager']
+    '*'      : ['passport', 'localize', 'sessionAuth'],
+    'destroy': ['passport', 'localize', 'sessionAuth', 'isAdmin'],
+    'update' : ['passport', 'localize', 'sessionAuth', 'isManager'],
+    'create' : ['passport', 'localize', 'sessionAuth', 'isManager']
   },
 
   'EquipmentController': {
-    '*'      : ['passport', 'sessionAuth'],
-    'destroy': ['passport', 'sessionAuth', 'isAdmin'],
-    'update' : ['passport', 'sessionAuth', 'isManager'],
-    'create' : ['passport', 'sessionAuth', 'isManager']
+    '*'      : ['passport', 'localize', 'sessionAuth'],
+    'destroy': ['passport', 'localize', 'sessionAuth', 'isAdmin'],
+    'update' : ['passport', 'localize', 'sessionAuth', 'isManager'],
+    'create' : ['passport', 'localize', 'sessionAuth', 'isManager']
   },
 
   'EventsController': {
-    '*'       : ['passport', 'sessionAuth', 'isAdmin'],
-    'comment' : ['passport', 'sessionAuth'],
-    'confirm' : ['passport', 'sessionAuth'],
-    'delete'  : ['passport', 'sessionAuth', 'isAdmin']
+    '*'       : ['passport', 'localize', 'sessionAuth', 'isAdmin'],
+    'comment' : ['passport', 'localize', 'sessionAuth'],
+    'confirm' : ['passport', 'localize', 'sessionAuth'],
+    'delete'  : ['passport', 'localize', 'sessionAuth', 'isAdmin']
   },
 
-
-
-
-  /***************************************************************************
-  *                                                                          *
-  * Here's an example of mapping some policies to run before a controller    *
-  * and its actions                                                          *
-  *                                                                          *
-  ***************************************************************************/
-	// RabbitController: {
-
-		// Apply the `false` policy as the default for all of RabbitController's actions
-		// (`false` prevents all access, which ensures that nothing bad happens to our rabbits)
-		// '*': false,
-
-		// For the action `nurture`, apply the 'isRabbitMother' policy
-		// (this overrides `false` above)
-		// nurture	: 'isRabbitMother',
-
-		// Apply the `isNiceToAnimals` AND `hasRabbitFood` policies
-		// before letting any users feed our rabbits
-		// feed : ['isNiceToAnimals', 'hasRabbitFood']
-	// }
 };

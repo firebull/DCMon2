@@ -53,6 +53,9 @@
                 <!-- ko if: selectedEq() >= 0 -->
                     <div data-bind="template: {name: 'eq-template', data: $root.eqs()[$root.selectedEq()], as: 'eq'}"></div>
                 <!-- /ko -->
+                <!-- ko if: selectedEq() < 0 && selectedRack() >= 0 -->
+                    <div data-bind="template: {name: 'rack-template', data: $root.racks()[$root.selectedRack()], as: 'rack'}"></div>
+                <!-- /ko -->
             </div>
         </div>
     </div>
@@ -105,6 +108,19 @@
         </div>
     </div>
 </script>
+<script type="text/html" id="rack-template">
+    <div class="ui dividing header">
+        <div class="content">
+            ID <span data-bind="text: rack.id"></span>:
+            <span data-bind="text: rack.name"></span>,
+            <div class="sub header">
+               <span data-bind="text: rack.description"></span>
+            </div>
+        </div>
+    </div>
+    <!-- ko template: 'filter-template' --><!-- /ko -->
+    <div data-bind="template: {name: 'events-item-template'}"></div>
+</script>
 <script type="text/html" id="eq-template">
     <div class="ui dividing header">
         <div class="content">
@@ -117,6 +133,44 @@
             </div>
         </div>
     </div>
+    <div class="ui menu">
+        <a class="item">
+            <i class="undo icon"></i> <%= __('Reset state') %>
+        </a>
+        <div class="right menu">
+            <div class="header item">
+                Power
+            </div>
+            <a class="item">
+                <i class="play icon"></i> <%= __('Power.Action.On') %>
+            </a>
+            <a class="item">
+                <i class="stop icon"></i> <%= __('Power.Action.Off') %>
+            </a>
+            <a class="item">
+                <i class="repeat icon"></i> <%= __('Power.Action.Reset') %>
+            </a>
+            <a class="item">
+                <i class="refresh icon"></i> <%= __('Power.Action.Cycle') %>
+            </a>
+            <a class="item">
+                <i class="radio icon"></i> <%= __('Power.Action.Soft.Shutdown') %>
+            </a>
+        </div>
+    </div>
+    <!-- ko template: 'filter-template' --><!-- /ko -->
+    <div class="ui fluid two item tabular menu">
+        <a class="item" data-bind="event: {click: $root.showEvents.bind($data)}, css: {active: $root.detailsTab() == 'events'}"><%= __('Events') %></a>
+        <a class="item"  data-bind="event: {click: $root.showSensors.bind($data, eq.id)}, css: {active: $root.detailsTab() == 'sensors'}"><%= __('Sensors data') %></a>
+    </div>
+    <!-- ko if: $root.detailsTab() == 'events' -->
+    <div data-bind="template: {name: 'events-item-template'}"></div>
+    <!-- /ko -->
+    <!-- ko if: $root.detailsTab() == 'sensors' -->
+    <div data-bind="template: {name: 'graph-item-template', foreach: $root.eqGraphs, as: 'graph', afterRender: $root.renderGraph}"></div>
+    <!-- /ko -->
+</script>
+<script type="text/html" id="filter-template">
     <div class="ui form segment">
         <div class="six fields" data-bind="visible: $root.detailsTab() == 'events'">
             <div class="ui small blue dividing header"><%= __('Log level filter') %></div>
@@ -170,21 +224,11 @@
             </div>
             <div class="field">
                 <label>&nbsp;</label>
-                <button data-bind="event: {click: $root.filter.bind($data, eq.id)}" class="ui primary button"><%= __('Refresh') %></button>
-                <button data-bind="event: {click: $root.resetFilter.bind($data, eq.id)}" class="ui button"><%= __('Reset') %></button>
+                <button data-bind="event: {click: $root.filter.bind($data)}" class="ui primary button"><%= __('Refresh') %></button>
+                <button data-bind="event: {click: $root.resetFilter.bind($data)}" class="ui button"><%= __('Reset') %></button>
             </div>
         </div>
     </div>
-    <div class="ui fluid two item tabular menu">
-        <a class="item" data-bind="event: {click: $root.showEvents.bind($data)}, css: {active: $root.detailsTab() == 'events'}"><%= __('Events') %></a>
-        <a class="item"  data-bind="event: {click: $root.showSensors.bind($data, eq.id)}, css: {active: $root.detailsTab() == 'sensors'}"><%= __('Sensors data') %></a>
-    </div>
-    <!-- ko if: $root.detailsTab() == 'events' -->
-    <div data-bind="template: {name: 'events-item-template'}"></div>
-    <!-- /ko -->
-    <!-- ko if: $root.detailsTab() == 'sensors' -->
-    <div data-bind="template: {name: 'graph-item-template', foreach: $root.eqGraphs, as: 'graph', afterRender: $root.renderGraph}"></div>
-    <!-- /ko -->
 </script>
 <script type="text/html" id="events-item-template">
     <div class="ui segment" data-bind="visible: $root.events().length == 0">
@@ -193,10 +237,10 @@
     <table class="ui very compact small table" data-bind="visible: $root.events().length > 0">
         <tbody data-bind="foreach: {data: $root.events, as: 'event'}">
             <tr data-bind="css: $root.eqEventColor(event._type, event._source.confirmed())">
-                <td data-bind="text: moment(event._source['@timestamp']).format('HH:mm:ss DD/MM/YY')"></td>
+                <td data-bind="text: moment(event._source['@timestamp']).format('HH:mm:ss DD/MM/YY')" class="three wide"></td>
                 <td data-bind="text: $root.statusByType[event._type]"></td>
                 <td data-bind="text: event._source['@message']"></td>
-                <td>
+                <td class="three wide">
                     <div class="mini icon ui buttons">
                         <div title="<%= __('Confirm') %>" data-bind="event: {click: $root.eventConfirm.bind($data)}" class="ui button">
                             <i class="check icon" data-bind="css: {'green': event._source.confirmed}"></i>
@@ -229,7 +273,7 @@
         this.dcs          = ko.observableArray();
         this.selectedDc   = ko.observable(false);
         this.racks        = ko.observableArray();
-        this.selectedRack = ko.observable(false);
+        this.selectedRack = ko.observable(-1);
         this.viewedRacks  = ko.observableArray();
         this.eqs          = ko.observableArray();
         this.selectedEq   = ko.observable(-1);
@@ -264,19 +308,21 @@
 
             self.selectedEq(-1);
             self.eqs.removeAll();
-            self.racks.removeAll();
+            self.racks([]);
             self.selectedDc(dc.id);
             var racks = [];
             $.each(dc.racks, function(index, item){
                 item.errors = ko.observable(0);
                 item.warning = ko.observable(0);
-                racks.push(ko.observable(item));
-                if (self.selectedRack() === false){
-                    self.selectRack(item);
-                }
+                racks.push(item);
             });
 
+
             self.racks(racks);
+
+            if (self.selectedRack() < 0){
+                self.selectRack(self.racks()[0]);
+            }
 
         }.bind(this);
 
@@ -284,22 +330,27 @@
             var self = this;
 
             self.selectedEq(-1);
+            self.detailsTab('events');
             self.eqs.removeAll();
-            self.selectedRack(rack.id);
+
+            self.selectedRack(self.racks.indexOf(rack));
 
             var eqQuery = {sort: 'name'};
 
             io.socket.get('/rackmount/' + rack.id + '/equipments', eqQuery, function(data, jwr){
+
                 if (jwr.statusCode == 200){
                     var eqs = [];
 
                     if (data !== undefined && data.length > 0){
-                        $.each(data, function(index, item){
+                        _.forEach(data, function(item){
                             eqs.push(ko.observable(item));
                         });
                     }
 
                     self.eqs(eqs);
+
+                    self.loadEvents();
                 } else if (jwr.statusCode == 401){
                     window.location.href = "/login";
                 } else {
@@ -344,12 +395,13 @@
             this.loadEvents();
         }.bind(this);
 
-        this.loadGraphs = function(id){
+        this.loadGraphs = function(){
             var self = this;
 
             var graphQuery = {from: self.minQueryDate(), to: self.maxQueryDate()};
+            var eq = self.eqs()[self.selectedEq()]();
 
-            io.socket.get('/equipment/graphs/' + id, graphQuery, function(data, jwr){
+            io.socket.get('/equipment/graphs/' + eq.id, graphQuery, function(data, jwr){
 
                 if (jwr.statusCode == 200){
                     eq = self.eqs()[self.selectedEq()]();
@@ -409,13 +461,14 @@
             var self = this;
             var eq, eventsQuery;
 
-            self.events([]); // Clear current
+            self.events.removeAll(); // Clear current
 
             if (self.selectedEq() >= 0){
                 eq = self.eqs()[self.selectedEq()]();
                 eventsQuery = {by: 'host', param: eq.address};
             } else {
-                eventsQuery = {by: 'rack', param: self.selectedRack()};
+                console.log(self.selectedRack());
+                eventsQuery = {by: 'rack', param: self.racks()[self.selectedRack()].id};
             }
 
             eventsQuery.limit = 100;
@@ -426,7 +479,6 @@
             }
 
             io.socket.get('/equipment/events', eventsQuery, function(data, jwr){
-
                 if (jwr.statusCode == 200){
                     if (data.result !== null){
                         self.eventsParams({total: data.result.total});
@@ -434,8 +486,9 @@
                             _.forEach(data.result.hits, function(hit){
                                 hit._source.comment   = ko.observableArray(hit._source.comment);
                                 hit._source.confirmed = ko.observable(hit._source.confirmed);
-                                self.events.push(hit);
                             });
+
+                            self.events(data.result.hits);
                         }
                     }
                 } else if (jwr.statusCode == 401){
@@ -543,19 +596,19 @@
             }
         }.bind(this);
 
-        this.filter = function(index, eq){
+        this.filter = function(index){
             var self = this;
 
             if (self.detailsTab() == 'events'){
                 self.eventsRange('filter');
                 self.loadEvents();
             } else if (self.detailsTab() == 'sensors'){
-                self.loadGraphs(eq.id);
+                self.loadGraphs();
             }
 
         }.bind(this);
 
-        this.resetFilter = function(index, eq){
+        this.resetFilter = function(index){
             this.eventsRange('last');
             this.minQueryDate(moment().subtract(2, 'hours').format('YYYY-MM-DD HH:mm'));
             this.maxQueryDate(moment().format('YYYY-MM-DD HH:mm'));
@@ -564,7 +617,7 @@
             if (self.detailsTab() == 'events'){
                 self.loadEvents();
             } else if (self.detailsTab() == 'sensors'){
-                self.loadGraphs(eq.id);
+                self.loadGraphs();
             }
 
         }.bind(this);
@@ -598,7 +651,7 @@
                 return '';
             }
 
-        }.bind(this);
+        };
 
         this.eventIcon = function(level){
             if (level == 'info'){
@@ -624,7 +677,6 @@
             io.socket.get('/datacenter', dcQuery, function(data, jwr){
                 if (jwr.statusCode == 200){
                     var dcs = [];
-
                     if (data !== undefined && data.length > 0){
                         _.forEach(data, function(item){
                             item.errors = ko.observable(0);

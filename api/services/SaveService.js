@@ -49,7 +49,7 @@ module.exports = {
                     {
                         sails.dcmonLogger.alert("Sensor '%s' is out of Range! Current: %s. Limits: [%s, %s].",
                                                 sensor.name, sensor.current, limits.min, limits.max,
-                                                {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                                {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
 
                         currentState.sensor_status = 'alert';
                         sensorsStates.alert[sensor.name] = sensor;
@@ -60,7 +60,7 @@ module.exports = {
                     {
                         sails.logger.warn("Sensor '%s' is at Range limits! Current: %s. Limits: [%s, %s].",
                                            sensor.name, sensor.current, limits.min, limits.max,
-                                           {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                           {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
 
                         if (currentState.sensor_status != 'alert') {
                             currentState.sensor_status = 'warn';
@@ -83,11 +83,11 @@ module.exports = {
 
             async.parallel([
                             function(callback){
-                                //ASYNC: Save equipment status to DB
+                                //ASYNC: Save equipment sensor_status to DB
                                 Equipment.update({'id': equipment.id}, currentState, function(err, result){
                                     if (err){
                                         sails.dcmonLogger.emerg('Could not update equipment data in DB: %s', err,
-                                                                {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                                                {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
                                         callback(err);
                                     } else {
                                         Equipment.publishUpdate(equipment.id, {sensor_status: result[0].sensor_status, updatedAt: result[0].updatedAt});
@@ -101,7 +101,7 @@ module.exports = {
                                     influxClient.writeSeries(saveData, function(err){
                                         if (err){
                                             sails.dcmonLogger.emerg('Could not save equipment sensors data in DB: %s', err,
-                                                                    {host: equipment.address, eq: eq.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                                                    {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
                                             callback(err);
                                         } else {
                                             Equipment.message(equipment.id, {message: 'sensorsUpdated'});
@@ -109,7 +109,7 @@ module.exports = {
                                         }
                                     });
                                 } else {
-                                    sails.logger.info('%s (%s): No sensors data to save', equipment.name, equipment.address, {host: equipment.address, eq: eq.id});
+                                    sails.logger.info('%s (%s): No sensors data to save', equipment.name, equipment.address, {host: equipment.address, eq: equipment.id});
                                     callback(null);
                                 }
                             },
@@ -124,5 +124,58 @@ module.exports = {
 
         }
     },
+
+    saveEvents: function(equipment, data, cb){
+
+        if (data.length > 0){
+
+            var numberLevels = {
+                    emerg:  0,
+                    alert:  1,
+                    crit:   2,
+                    error:  3,
+                    warn:   4,
+                    notice: 5,
+                    info:   6,
+                    debug:  7,
+                    ok:     6 // Fake level as in DB event_status is OK in normal
+                };
+
+            var levels = ['emerg', 'alert', 'crit', 'error', 'warn', 'notice', 'info', 'debug'];
+
+            var commonStatus = numberLevels[equipment.event_status];
+
+            _.forEach(data, function(message){
+                //sails.dcmonLogger[message.level](message.msg, {timestamp: message.timestamp, host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+
+                // Define common equipment event status
+                // If it is worth then already stored in DB - set it
+                if (numberLevels[message.level] !== undefined && numberLevels[message.level] < commonStatus){
+                    commonStatus = numberLevels[message.level];
+                }
+            });
+
+            //ASYNC: Save equipment event_status to DB
+            Equipment.update({'id': equipment.id}, {event_status: levels[commonStatus]}, function(err, result){
+                if (err){
+                    sails.dcmonLogger.emerg('Could not update equipment data in DB: %s', err,
+                                            {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                    return cb(err);
+                } else {
+                    Equipment.publishUpdate(equipment.id, {sensor_status: result[0].sensor_status, updatedAt: result[0].updatedAt});
+                    return cb(null);
+                }
+            });
+
+        } else {
+            // If no new events and current state of server not OK,
+            // then query all not confirmed events and get state from them
+            // This is done to renew state if events were confirmed
+
+            // TODO: Implement this
+
+            cb(null);
+        }
+    }
 
 };

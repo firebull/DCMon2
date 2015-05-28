@@ -35,13 +35,15 @@ module.exports.bootstrap = function(cb) {
             emerg:  0,
             alert:  1,
             crit:   2,
+            error:  3,
             warn:   4
         },
         colors: {
             emerg: 'red',
             alert: 'red',
             crit:  'red',
-            warn:  'orange'
+            error: 'red',
+            warn:  'yellow'
         }
       };
 
@@ -100,7 +102,7 @@ module.exports.bootstrap = function(cb) {
         new (winstonElastic)({
           name: 'info-elastic',
           timestamp: true,
-          level: 'info',
+          level: 'warn',
           client: sails.elastic,
           disable_fields: true,
           source: 'DC Monitor 2'

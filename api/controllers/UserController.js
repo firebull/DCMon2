@@ -161,6 +161,31 @@ module.exports = {
                 return res.ok(user);
             }
     });
+  },
+
+  // Set language
+  // If user is login, then save lang to DB too
+  // Else save only to session (for login page, for example)
+  lang: function(req, res) {
+    var langs = sails.config.i18n.locales;
+    if (req.body && langs.indexOf(req.body.lang) >= 0){
+        if (req.session.authenticated){
+            User.update({id: req.session.passport.user}, {lang: req.body.lang})
+                .exec(function(err){
+                    if (err){
+                        return res.serverError('Could not save user ID %s lang: %s', req.session.passport.user, err);
+                    } else {
+                        req.session.lang = req.body.lang;
+                        return res.ok();
+                    }
+            });
+        } else {
+            req.session.lang = req.body.lang;
+            return res.ok();
+        }
+    } else {
+        return res.badRequest('This lang is not availiable');
+    }
   }
 };
 

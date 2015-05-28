@@ -129,5 +129,11 @@
 	"No comments yet": "No comments yet",
 	"Add Comment": "Add Comment",
 	"Close": "Close",
-	"Profile": "Profile"
+	"Profile": "Profile",
+	"Power.Action.On": "On",
+	"Power.Action.Off": "Off",
+	"Power.Action.Reset": "Reset",
+	"Reset state": "Reset state",
+	"Power.Action.Cycle": "Power Cycle",
+	"Power.Action.Soft.Shutdown": "Soft Shutdown"
 }

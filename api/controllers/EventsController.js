@@ -30,6 +30,7 @@ module.exports = {
                                     }
                                 }
                             }, function (err, response) {
+
                                 if (err){
                                     sails.logger.info('ERROR: Could not confirm event id %s: %s', req.params.id, err);
                                     return res.json({error: err});
@@ -42,6 +43,10 @@ module.exports = {
     }
   },
 
+  // Query all not confirmed logs by query and confirm them
+  massConfirm: function(req, res){
+        return res.json({todo: 'Not implemented'});
+  },
 
   /**
    * `EventsController.comment()`

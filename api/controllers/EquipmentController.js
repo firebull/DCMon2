@@ -91,6 +91,7 @@ module.exports = {
 
             if (req.body.levels !== undefined){
                 levels = req.body.levels;
+
             }
         }
 
@@ -105,9 +106,14 @@ module.exports = {
         if (!req.body || (req.body.from === undefined && req.body.to === undefined)){
             query.filtered = {
                                 filter: {
-                                           exists : { field : "@timestamp" }
-                                        }
-                             };
+                                        bool: {
+                                                must:[
+
+                                                      { exists : { field : "@timestamp" }}
+                                                    ]
+                                            }
+                                    }
+                            };
         } else {
         // Request logs in timestamp range
             query.filtered = {
@@ -138,7 +144,7 @@ module.exports = {
         } else if (by == 'rack') {
             query.filtered.query =  {
                                         multi_match: {
-                                                    query:  param,
+                                                    query:  Number(param),
                                                     type:   "cross_fields",
                                                     fields: [ "@fields.rack"]
                                                     }
@@ -161,8 +167,10 @@ module.exports = {
                                                     type: levels,
                                                     from: offset,
                                                     size: limit,
+                                                    lenient: true,
                                                     body: {query: query}},
                                             function (err, results){
+                                                //console.log(query.filtered);
                                                     callback(err, results.exists);
                                                 });
                 },
@@ -172,6 +180,7 @@ module.exports = {
                                                 type: levels,
                                                 from: offset,
                                                 size: limit,
+                                                lenient: true,
                                                 sort: ['@timestamp:desc'],
                                                 body: {query: query}},
                                         function (err, results){
@@ -186,11 +195,14 @@ module.exports = {
                                                 }
                                             });
                     } else {
-                        return res.json({url: req.url, results: {total: 0}});
+                        return res.json({url: req.url, result: {total: 0}});
                     }
                 }
 
-            ]);
+            ], function(err){
+                //console.log(query.filtered);
+                return res.json({url: req.url, result: {total: 0}});
+            });
     },
 
     getCommonStatus: function(req, res){

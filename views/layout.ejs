@@ -104,6 +104,7 @@
             <!-- ko foreach: {data: commonStatus().events(), as: 'state'} -->
             <div class="ui label" data-bind="css: $root.statusColor(state.status)">
                 <i class="icon" data-bind="css: $root.statusIcon(state.status)"></i>
+                <span data-bind="text: _.capitalize(state.status)"></span>
                 <span data-bind="text: state.num"></span>
             </div>
             <!-- /ko -->
@@ -156,7 +157,7 @@
                 <i class="flag icon"></i>
                 <i class="dropdown icon"></i>
                 <div class="menu" data-bind="foreach: langs">
-                    <a class="item" data-bind="text: name, event: {click: $root.selectLang.bind($data)}"></a>
+                    <a class="item" data-bind="text: name, event: {click: $root.selectLang.bind($data)}, css: {blue: $root.currentLang == id}"></a>
                 </div>
             </div>
             <a class="ui item" href="/logout">
@@ -231,6 +232,7 @@
         this.me        = ko.observable(false);
 
         this.langs     = <%- JSON.stringify(HelperService.langsArray()) %>;
+        this.currentLang = "<%- req.session.lang %>";
 
         this.statusIcon = function(status){
             if (status == 'ok'){
@@ -261,7 +263,15 @@
         this.selectLang = function(lang){
             var self = this;
 
-            // TODO: Make lang select
+            io.socket.get('/user/lang', {lang: lang.id}, function(data, jwr){
+                if (jwr.statusCode == 200){
+                    window.location.reload(true);
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
 
         }.bind(this);
 
@@ -270,6 +280,12 @@
             self.loadStates();
             io.socket.get('/notifications/subscribe/statusUpdates');
             swal.close();
+        });
+
+        io.socket.on('reconnecting',function(obj){
+
+            console.log('reconnect');
+
         });
 
         io.socket.on('disconnect', function(){
@@ -309,7 +325,6 @@
 
             io.socket.get('/user/me', function(data, jwr){
                 if (jwr.statusCode == 200){
-                    console.log(data);
                     self.me(data);
                 } else if (jwr.statusCode == 401){
                     window.location.href = "/login";

@@ -25,14 +25,13 @@ module.exports = {
                                         } else {
                                             // There is now func to save events yet
                                             //Save sensors to DB and alert if needed
-                                            /*SaveService.saveEvents(item, data, function(err){
+                                            SaveService.saveEvents(item, data, function(err){
                                                 if (err){
                                                     asyncCallback(err);
                                                 } else {
                                                     asyncCallback(null);
                                                 }
-                                            });*/
-                                            asyncCallback(null);
+                                            });
                                         }
                                     });
                                 }
