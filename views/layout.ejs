@@ -83,7 +83,7 @@
         </div>
         <!-- ko if: commonStatus() -->
         <div class="item">
-            <!-- ko foreach: {data: commonStatus().power(), as: 'state'} -->
+            <!-- ko foreach: {data: commonStatus().power, as: 'state'} -->
             <div class="ui label" data-bind="css: $root.statusColor(state.status)">
                 <i class="power icon"></i>
                 <span data-bind="text: state.num"></span>
@@ -92,7 +92,7 @@
         </div>
         <div class="item">
             <i class="dashboard icon"></i>
-            <!-- ko foreach: {data: commonStatus().sensors(), as: 'state'} -->
+            <!-- ko foreach: {data: commonStatus().sensors, as: 'state'} -->
             <div class="ui label" data-bind="css: $root.statusColor(state.status)">
                 <i class="icon" data-bind="css: $root.statusIcon(state.status)"></i>
                 <span data-bind="text: state.num"></span>
@@ -101,7 +101,7 @@
         </div>
         <div class="item">
             <i class="mail icon"></i>
-            <!-- ko foreach: {data: commonStatus().events(), as: 'state'} -->
+            <!-- ko foreach: {data: commonStatus().events, as: 'state'} -->
             <div class="ui label" data-bind="css: $root.statusColor(state.status)">
                 <i class="icon" data-bind="css: $root.statusIcon(state.status)"></i>
                 <span data-bind="text: _.capitalize(state.status)"></span>
@@ -294,11 +294,7 @@
         });
 
         io.socket.on('statusUpdates',function(obj){
-          if (obj.verb == 'messaged') {
             self.loadStates();
-          } else {
-            console.log(obj);
-          }
         });
 
         this.loadStates = function(){
@@ -309,12 +305,8 @@
                     var states = {};
                     if (data.error){
                         self.errors.push(data.error);
-                    } else {
-                        _.forIn(data.result, function(value, key){
-                            states[key] = ko.observableArray(value);
-                        });
-
-                        self.commonStatus(states);
+                    } else { 
+                        self.commonStatus(data.result);
                     }
                 } else if (jwr.statusCode == 401){
                     window.location.href = "/login";

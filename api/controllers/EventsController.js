@@ -9,7 +9,6 @@ var moment = require('moment');
 
 module.exports = {
 
-
   /**
    * `EventsController.confirm()`
    */
@@ -32,7 +31,7 @@ module.exports = {
                             }, function (err, response) {
 
                                 if (err){
-                                    sails.logger.info('ERROR: Could not confirm event id %s: %s', req.params.id, err);
+                                    sails.logger.error(' Could not confirm event id %s: %s', req.params.id, err);
                                     return res.json({error: err});
                                 } else {
                                     return res.json({result: 'ok'});
@@ -41,11 +40,6 @@ module.exports = {
     } else {
         return res.badRequest();
     }
-  },
-
-  // Query all not confirmed logs by query and confirm them
-  massConfirm: function(req, res){
-        return res.json({todo: 'Not implemented'});
   },
 
   /**
@@ -106,7 +100,7 @@ module.exports = {
                 }
             ], function(err){
                 if (err){
-                    sails.logger.info('ERROR: Could not comment the event id %s: %s', req.params.id, err);
+                    sails.logger.error('Could not comment the event id %s: %s', req.params.id, err);
                     return res.json({error: err});
                 } else {
                     sails.elastic.get({
@@ -172,7 +166,7 @@ module.exports = {
                 }
             ], function(err){
                 if (err){
-                    sails.logger.info('ERROR: Could not delete the event id %s: %s', req.params.id, err);
+                    sails.logger.error('Could not delete the event id %s: %s', req.params.id, err);
                     res.status(400);
                     return res.json({error: err});
                 } else {
@@ -185,4 +179,3 @@ module.exports = {
     }
   }
 };
-

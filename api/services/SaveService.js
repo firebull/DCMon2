@@ -162,7 +162,8 @@ module.exports = {
                                             {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
                     return cb(err);
                 } else {
-                    Equipment.publishUpdate(equipment.id, {sensor_status: result[0].sensor_status, updatedAt: result[0].updatedAt});
+                    sails.sockets.blast('statusUpdates', {message: 'eventsUpdated'});
+                    Equipment.publishUpdate(equipment.id, {event_status: result[0].event_status, updatedAt: result[0].updatedAt});
                     return cb(null);
                 }
             });

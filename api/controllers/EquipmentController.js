@@ -200,7 +200,6 @@ module.exports = {
                 }
 
             ], function(err){
-                //console.log(query.filtered);
                 return res.json({url: req.url, result: {total: 0}});
             });
     },
@@ -236,6 +235,120 @@ module.exports = {
                 );
     },
 
+	// 1) Query all not confirmed logs by query and confirm them
+	// 2) Set states to OK
+	resetState: function(req, res){
+		if (req.params.id){
+			Equipment.findOne({id: req.params.id}).exec(function(err, eq){
+				console.log(req.params);
+				if (err){
+					return res.badRequest();
+				}
+
+				var query = {};
+
+				query.filtered = {
+	                                filter: {
+	                                        bool: {
+	                                                must:[
+															{ exists : { field : "confirmed" }},
+															{ term   : { '@fields.host': eq.address}}
+													]
+	                                        }
+	                                },
+									query:  {
+		                                        match: {
+															confirmed:  false
+														}
+
+		                                    }
+	                            };
+
+
+				async.waterfall([
+		                function(callback){
+	                        sails.elastic.search({  index: 'logs',
+	                                                lenient: true,
+													fields: ['id', 'type'],
+	                                                body: {query: query}},
+	                                        function (err, results){
+	                                                if (err && err.length > 0){
+	                                                    callback(err);
+	                                                } else {
+	                                                    callback(null, results);
+	                                                }
+	                                            });
+		                },
+						function(results, callback){
+							if (results.hits && results.hits.total > 0){
+								console.log(results.hits);
+								async.each(results.hits.hits, function(hit, eachCallback) {
+									sails.elastic.update({
+							                                index: 'logs',
+							                                type:  hit._type,
+							                                id:    hit._id,
+							                                body: {
+							                                    doc: {
+							                                      confirmed: true,
+							                                      confirmerId: res.locals.user.id,
+
+							                                      // Let's save confimer login for history
+							                                      // in case he will be deleted later
+							                                      confirmerName: res.locals.user.username,
+							                                    }
+							                                }
+							                            }, function (err, response) {
+							                                if (err){
+																eachCallback(err);
+							                                } else {
+																eachCallback(null);
+							                                }
+							                            });
+								}, function(err){
+								    if( err ) {
+								        callback(err);
+								    } else {
+										callback(null);
+								    }
+								});
+
+							} else {
+								callback(null);
+							}
+						},
+						function(callback){
+							// If there were no errors in Async calls,
+							// update equipment states
+							Equipment.update({id: req.params.id},
+											 {event_status: 'ok', sensor_status: 'ok'}
+										).exec(function(err, result){
+											console.log(result);
+											if (err){
+												callback(err);
+											} else {
+												sails.sockets.blast('statusUpdates', { message: 'eventsUpdated' });
+												Equipment.publishUpdate(result[0].id, { sensor_status: result[0].sensor_status,
+													                                    event_status:  result[0].event_status,
+																						updatedAt:     result[0].updatedAt});
+												callback(null);
+											}
+										});
+
+						}
+		            ], function(err){
+						if (err){
+							sails.logger.error('Could not mark events as confimed for eq #%s. Elasticsearch error: %s', req.params.id, err);
+		                	return res.serverError();
+						} else {
+							return res.ok();
+						}
+		            });
+			});
+		} else {
+			return res.badRequest();
+		}
+	},
+
     testQuery: function(req, res){
 
         QueryService.queryEqs(function(err, result){
@@ -243,4 +356,3 @@ module.exports = {
         });
     }
 };
-

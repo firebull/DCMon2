@@ -135,5 +135,10 @@
 	"Power.Action.Reset": "Reset",
 	"Reset state": "Reset state",
 	"Power.Action.Cycle": "Power Cycle",
-	"Power.Action.Soft.Shutdown": "Soft Shutdown"
+	"Power.Action.Soft.Shutdown": "Soft Shutdown",
+	"State.Reset": "Reset",
+	"Sensors limits configuration": "Sensors limits configuration",
+	"Reset equipment state?": "Reset equipment state?",
+	"Alert.Reset.State": "This will mark all events as confirmed and set event and sensors states as OK",
+	"Yes, reset state": "Yes, reset state"
 }

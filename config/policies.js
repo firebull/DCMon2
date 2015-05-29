@@ -72,10 +72,11 @@ module.exports.policies = {
   },
 
   'EquipmentController': {
-    '*'      : ['passport', 'localize', 'sessionAuth'],
-    'destroy': ['passport', 'localize', 'sessionAuth', 'isAdmin'],
-    'update' : ['passport', 'localize', 'sessionAuth', 'isManager'],
-    'create' : ['passport', 'localize', 'sessionAuth', 'isManager']
+    '*'         : ['passport', 'localize', 'sessionAuth'],
+    'destroy'   : ['passport', 'localize', 'sessionAuth', 'isAdmin'],
+    'update'    : ['passport', 'localize', 'sessionAuth', 'isManager'],
+    'create'    : ['passport', 'localize', 'sessionAuth', 'isManager'],
+    'resetState': ['passport', 'localize', 'sessionAuth', 'isAdmin'],
   },
 
   'EventsController': {

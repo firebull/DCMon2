@@ -97,16 +97,6 @@ module.exports.bootstrap = function(cb) {
           level: 'error',
           maxFiles: 5
         }),
-
-        // Elasticsearch
-        new (winstonElastic)({
-          name: 'info-elastic',
-          timestamp: true,
-          level: 'warn',
-          client: sails.elastic,
-          disable_fields: true,
-          source: 'DC Monitor 2'
-        }),
       ]
     });
 
