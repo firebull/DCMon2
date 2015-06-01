@@ -17,6 +17,7 @@ module.exports = {
 
     graphs: function(req, res){
         var ip     = require('ip').toLong;
+		var XRegExp = require('xregexp').XRegExp;
         var from, to;
 
         var influxClient = sails.influxClient;
@@ -53,11 +54,55 @@ module.exports = {
 
                 var query = util.format("SELECT DISTINCT(value) AS value FROM /^ip%s\./i WHERE time > %ss group by time(%sm) ORDER ASC", ip(eq.address), from, distinctTime);
                 influxClient.query(query, function(err, data){
-                    return res.json({sensors: data});
+					if (err){
+						return res.serverError();
+					} else {
+						_.forEach(data, function(item){
+							item.name = XRegExp.split(item.name, /\./g)[1];
+						});
+						return res.ok(data);
+					}
                 });
             }
         });
     },
+
+	/**
+	 * Get last data of sensors for eq
+	 * @return {Object} sensor names with their last values
+	 */
+	lastSensorsData: function(req, res){
+		var ip      = require('ip').toLong;
+		var XRegExp = require('xregexp').XRegExp;
+        var storeName;
+		var lastData = {};
+
+        var influxClient = sails.influxClient;
+
+        Equipment.findOne({'id': req.params.id}).exec(function(err, eq){
+            if (err){
+                sails.logger.error('Could not get equipment ID %s: %s', req.params.id, err);
+                return res.json();
+            } else {
+
+				var query = util.format("SELECT value FROM /^ip%s\./i LIMIT 1", ip(eq.address));
+                influxClient.query(query, function(err, data){
+					if (err){
+						return res.serverError();
+					} else {
+						_.forEach(data, function(item){
+
+							storeName = XRegExp.split(item.name, /\./g)[1];
+							lastData[storeName] = item.points[0][2];
+						});
+
+						return res.ok(lastData);
+					}
+
+                });
+            }
+        });
+	},
 
     events: function(req, res){
         var from = moment().subtract(2, 'hours').toJSON(), // Search from datetime
@@ -240,7 +285,6 @@ module.exports = {
 	resetState: function(req, res){
 		if (req.params.id){
 			Equipment.findOne({id: req.params.id}).exec(function(err, eq){
-				console.log(req.params);
 				if (err){
 					return res.badRequest();
 				}
@@ -270,6 +314,7 @@ module.exports = {
 	                        sails.elastic.search({  index: 'logs',
 	                                                lenient: true,
 													fields: ['id', 'type'],
+													size: 1000,
 	                                                body: {query: query}},
 	                                        function (err, results){
 	                                                if (err && err.length > 0){
@@ -281,7 +326,6 @@ module.exports = {
 		                },
 						function(results, callback){
 							if (results.hits && results.hits.total > 0){
-								console.log(results.hits);
 								async.each(results.hits.hits, function(hit, eachCallback) {
 									sails.elastic.update({
 							                                index: 'logs',
@@ -322,7 +366,6 @@ module.exports = {
 							Equipment.update({id: req.params.id},
 											 {event_status: 'ok', sensor_status: 'ok'}
 										).exec(function(err, result){
-											console.log(result);
 											if (err){
 												callback(err);
 											} else {

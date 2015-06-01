@@ -282,9 +282,10 @@
             swal.close();
         });
 
-        io.socket.on('reconnecting',function(obj){
+        io.socket.on('connect_error',function(obj){
 
-            console.log('reconnect');
+            console.log('connect_error');
+            console.log(obj);
 
         });
 
@@ -305,7 +306,7 @@
                     var states = {};
                     if (data.error){
                         self.errors.push(data.error);
-                    } else { 
+                    } else {
                         self.commonStatus(data.result);
                     }
                 } else if (jwr.statusCode == 401){

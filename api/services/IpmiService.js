@@ -80,8 +80,8 @@ module.exports = {
                         // Add sensor limits to DB if absent
                         if (equipment.sensors_params[item.name] === undefined){
                             equipment.sensors_params[item.name] = item;
-                            equipment.sensors_params[item.name].warnLimit = 0.07;
-                            equipment.sensors_params[item.name].alertLimit = 0.03;
+                            equipment.sensors_params[item.name].warnLimit = 7;
+                            equipment.sensors_params[item.name].alertLimit = 3;
                             equipment.sensors_params[item.name].criticalSensor = false;
                             equipment.sensors_params[item.name].ignoreSensor = false;
                         }
@@ -94,8 +94,8 @@ module.exports = {
 
                     parsed.limits.forEach(function(item, i){
                         sensors_params[item.name] = item;
-                        sensors_params[item.name].warnLimit = 0.07;
-                        sensors_params[item.name].alertLimit = 0.03;
+                        sensors_params[item.name].warnLimit = 7;
+                        sensors_params[item.name].alertLimit = 3;
                         sensors_params[item.name].criticalSensor = false;
                         sensors_params[item.name].ignoreSensor = false;
 
@@ -139,9 +139,34 @@ module.exports = {
             });
 
         });
+    },
 
+    /**
+     * Clear events
+     * @param  {Object}   equipment [requested equipment data]
+     * @param  {Function} callback
+     */
+    clearEvents: function(equipment, callback){
+        var query = {'address':  equipment.address,
+                     'login':    equipment.login,
+                     'password': equipment.password,
+                     'command': ['sel', 'clear']
+                     };
+        var parser;
 
+        if (equipment.sensors_proto == 'ipmi'){
+            query.proto = 'lan';
+        } else if (equipment.sensors_proto == 'ipmiv2'){
+            query.proto = 'lanplus';
+        }
+
+        ipmiShell(query, function(err, data){
+
+            if (err.length > 0){
+                return callback(err);
+            } else {
+                return callback(null);
+            }
+        });
     }
 };
-
-

@@ -140,5 +140,14 @@
 	"Sensors limits configuration": "Sensors limits configuration",
 	"Reset equipment state?": "Reset equipment state?",
 	"Alert.Reset.State": "This will mark all events as confirmed and set event and sensors states as OK",
-	"Yes, reset state": "Yes, reset state"
+	"Yes, reset state": "Yes, reset state",
+	"Sensor name": "Sensor name",
+	"Sensor.Current.Value": "Current",
+	"Min limit": "Min limit",
+	"Max limit": "Max limit",
+	"Warn limit, %": "Warn limit, %",
+	"Alert limit, %": "Alert limit, %",
+	"Sensor.Ignore": "Ignore",
+	"Edit equipment sensors limits": "Edit equipment sensors limits",
+	"Save": "Save"
 }

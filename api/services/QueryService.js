@@ -5,7 +5,7 @@ module.exports = {
          .populate('rackmount')
          .exec(function(err, eqs){
             if (err){
-                sails.logger.error('Could not get equipment list from DB: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                sails.logger.error('Could not get equipment list from DB: %s', err);
             } else {
 
                 if (eqs.length > 0){
@@ -19,7 +19,7 @@ module.exports = {
                                 if (item.events_proto == 'ipmi' || item.events_proto == 'ipmiv2'){
                                     sails.logger.info('Query events of %s (%s) trough IPMI', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
                                     IpmiService.queryEvents(item, function(err, data){
-                                        if (err){
+                                        if (err && err.toString().trim() != 'SEL has no entries'){
                                             sails.logger.error('Could not query events through IPMI: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
                                             asyncCallback(null); // Non critical error, lets continue
                                         } else {

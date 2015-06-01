@@ -99,7 +99,7 @@
 	"Log level filter": "Фильт по уровню событий",
 	"Date/Time filter": "Фильтр по Дате/Времени",
 	"Query data from:": "Запрос данных с:",
-	"To:": "До:",
+	"To:": "По:",
 	"Refresh": "Обновить",
 	"Reset": "Сброс",
 	"Sensors data": "Sensors data",
@@ -124,5 +124,13 @@
 	"Alert.Reset.State": "Это пометит все события как подтверждёные и установит состояние событий и сенсоров как OK",
 	"Yes, reset state": "Да, сбросить состояние",
 	"Error.Passport.Password.Wrong": "Error.Passport.Password.Wrong",
-	"Edit equipment sensors limits": "Edit equipment sensors limits"
+	"Edit equipment sensors limits": "Edit equipment sensors limits",
+	"Sensor name": "Имя сенсора",
+	"Alert limit, %": "Alert limit, %",
+	"Sensor.Current.Value": "Текущее",
+	"Min limit": "Min limit",
+	"Max limit": "Max limit",
+	"Warn limit, %": "Warn limit, %",
+	"Sensor.Ignore": "Игнорировать",
+	"Save": "Save"
 }

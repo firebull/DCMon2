@@ -20,7 +20,7 @@ module.exports = {
         var saveData = {};
         var limits   = {};
         var currentState  = {sensors_state: {}};
-        var sensorsStates = {warn: [], alert: []};
+        var sensorsStates = {warn: {}, alert: {}};
 
         if (data.sensors.length > 0){
             data.sensors.forEach(function(sensor){
@@ -28,24 +28,22 @@ module.exports = {
                 saveData['ip' + ip(equipment.address) + '.' + sensor.name] = [{value: sensor.current,
                                                                                time: sensor.timestamp}];
 
-                // Parse for value limits and alert if needed
-                if (sensor.ignoreSensor === false){
+                limits = data.limits[sensor.name];
 
-                    limits = data.limits[sensor.name];
+                // Parse for value limits and alert if needed
+                if (limits.ignoreSensor === false){
 
                     // Count deviations
                     if (sensor.current !== 0){
-                        minDev = Math.abs((sensor.current - limits.min) / sensor.current);
+                        minDev = Math.abs((sensor.current - limits.min) / sensor.current)*100;
                     } else {
                         minDev = 0;
                     }
 
-                    maxDev = Math.abs((limits.max - sensor.current) / limits.max);
+                    maxDev = Math.abs((limits.max - sensor.current) / limits.max)*100;
 
-                    if (minDev <= limits.alertLimit
-                            || maxDev <= limits.alertLimit
-                            || sensor.current <= limits.min
-                            || sensor.current >= limits.max)
+                    // Alert if out of ranges
+                    if (sensor.current <= limits.min || sensor.current >= limits.max)
                     {
                         sails.dcmonLogger.alert("Sensor '%s' is out of Range! Current: %s. Limits: [%s, %s].",
                                                 sensor.name, sensor.current, limits.min, limits.max,
@@ -55,10 +53,22 @@ module.exports = {
                         sensorsStates.alert[sensor.name] = sensor;
                     }
                     else
+                    //Alert if close to ranges
+                    if (minDev <= limits.alertLimit || maxDev <= limits.alertLimit)
+                    {
+                        sails.dcmonLogger.alert("Sensor '%s' is at Range limits! Current: %s. Limits: [%s, %s].",
+                                                sensor.name, sensor.current, limits.min, limits.max,
+                                                {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+
+                        currentState.sensor_status = 'alert';
+                        sensorsStates.alert[sensor.name] = sensor;
+                    }
+                    else
+                    // Warning if close to warn limits
                     if ((minDev > limits.alertLimit && minDev <= limits.warnLimit)
                             || (maxDev > limits.alertLimit && maxDev <= limits.warnLimit))
                     {
-                        sails.logger.warn("Sensor '%s' is at Range limits! Current: %s. Limits: [%s, %s].",
+                        sails.dcmonLogger.warn("Sensor '%s' is close to Range limits! Current: %s. Limits: [%s, %s].",
                                            sensor.name, sensor.current, limits.min, limits.max,
                                            {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
 
@@ -72,7 +82,7 @@ module.exports = {
             });
 
             // If there are sensors in Alert or Warning state - save them
-            if (sensorsStates.warn.length > 0 || sensorsStates.alert.length > 0){
+            if (_.size(sensorsStates.warn) > 0 || _.size(sensorsStates.alert) > 0){
                 currentState.sensors_state = sensorsStates;
             } else {
                 currentState.sensors_state = {};
@@ -90,7 +100,12 @@ module.exports = {
                                                                 {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
                                         callback(err);
                                     } else {
-                                        Equipment.publishUpdate(equipment.id, {sensor_status: result[0].sensor_status, updatedAt: result[0].updatedAt});
+                                        if (currentState.sensors_state != {}){
+                                            Equipment.publishUpdate(equipment.id, {sensor_status: result[0].sensor_status, sensors_state: currentState.sensors_state, updatedAt: result[0].updatedAt});
+                                        } else {
+                                            Equipment.publishUpdate(equipment.id, {sensor_status: result[0].sensor_status, updatedAt: result[0].updatedAt});
+                                        }
+
                                         callback(null);
                                     }
                                 });
@@ -127,31 +142,38 @@ module.exports = {
 
     saveEvents: function(equipment, data, cb){
 
+        var numberLevels = {
+                emerg:  0,
+                alert:  1,
+                crit:   2,
+                error:  3,
+                warn:   4,
+                notice: 5,
+                info:   6,
+                debug:  7,
+                ok:     6 // Fake level as in DB event_status is OK in normal
+            };
+
+        var levels = ['emerg', 'alert', 'crit', 'error', 'warn', 'notice', 'info', 'debug'];
+
         if (data.length > 0){
-
-            var numberLevels = {
-                    emerg:  0,
-                    alert:  1,
-                    crit:   2,
-                    error:  3,
-                    warn:   4,
-                    notice: 5,
-                    info:   6,
-                    debug:  7,
-                    ok:     6 // Fake level as in DB event_status is OK in normal
-                };
-
-            var levels = ['emerg', 'alert', 'crit', 'error', 'warn', 'notice', 'info', 'debug'];
 
             var commonStatus = numberLevels[equipment.event_status];
 
             _.forEach(data, function(message){
-                //sails.dcmonLogger[message.level](message.msg, {timestamp: message.timestamp, host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                sails.dcmonLogger[message.level](message.msg, {timestamp: message.timestamp, host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
 
                 // Define common equipment event status
                 // If it is worth then already stored in DB - set it
                 if (numberLevels[message.level] !== undefined && numberLevels[message.level] < commonStatus){
                     commonStatus = numberLevels[message.level];
+                }
+            });
+
+            IpmiService.clearEvents(equipment, function(err){
+                if (err){
+                    sails.dcmonLogger.error('Could not clear equipment events through IPMI: %s', err,
+                                            {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
                 }
             });
 
@@ -174,8 +196,72 @@ module.exports = {
             // This is done to renew state if events were confirmed
 
             // TODO: Implement this
+            var eventStatus = 'ok'; // Basic normal status
 
-            cb(null);
+            query = {
+                      aggregations: {
+                         "group_by_level": {
+                           "terms": {
+                             "field": "level"
+                           }
+                         }
+                       },
+                       query: {
+                         filtered: {
+                           filter: {
+                               bool: {
+                                       must:[
+                                               { miss : { field : "confirmed" }},
+                                               { term   : { '@fields.host': equipment.address}}
+                                       ]
+                               }
+                           }
+                         }
+                       }
+                     };
+
+
+            sails.elastic.search({  index: 'logs',
+                                    size: 0,
+                                    search_type: 'count',
+                                    body: query},
+                function (err, results){
+
+                        if (err && err.length > 0){
+                            return cb(err);
+                        } else {
+                            if (results.hits !== undefined && results.hits.total > 0){
+                                // Count current events state
+                                _.forEach(results.aggregations.group_by_level.buckets,
+                                    function(item){
+                                        if (numberLevels[item.key] < numberLevels[eventStatus]){
+                                            eventStatus = item.key;
+                                        }
+                                });
+                            }
+
+                            // If current and counted levela are different - save new
+                            if (equipment.event_status != eventStatus){
+                                Equipment.update({id: equipment.id},
+                                                 {event_status: eventStatus},
+                                                 function(err, result){
+                                                     if (err){
+                                                         sails.dcmonLogger.emerg('Could not update equipment data in DB: %s', err,
+                                                                                 {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                                         return cb(err);
+                                                     } else {
+                                                         sails.sockets.blast('statusUpdates', {message: 'eventsUpdated'});
+                                                         Equipment.publishUpdate(equipment.id, {event_status: result[0].event_status, updatedAt: result[0].updatedAt});
+                                                         return cb(null);
+                                                     }
+                                                 });
+                            } else {
+                                return cb(null);
+                            }
+                        }
+                    });
+
+
         }
     }
 
