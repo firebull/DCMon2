@@ -195,7 +195,6 @@ module.exports = {
             // then query all not confirmed events and get state from them
             // This is done to renew state if events were confirmed
 
-            // TODO: Implement this
             var eventStatus = 'ok'; // Basic normal status
 
             query = {
@@ -240,7 +239,7 @@ module.exports = {
                                 });
                             }
 
-                            // If current and counted levela are different - save new
+                            // If current and counted levels are different - save new
                             if (equipment.event_status != eventStatus){
                                 Equipment.update({id: equipment.id},
                                                  {event_status: eventStatus},
@@ -263,6 +262,31 @@ module.exports = {
 
 
         }
+    },
+
+    saveInfo: function(equipment, data, cb){
+        // Delete current information
+        EqInfo.destroy({equipment: equipment.id}).exec(function(err){
+            if (err){
+                return cb(err);
+            } else {
+                EqInfo.create(data).exec(function(err, result){
+                    if (err){
+                        return cb(err);
+                    } else {
+                        Equipment.update({id: equipment.id}, {query_configuration: false}).
+                            exec(function(err, result){
+                                if (err){
+                                    return cb(err);
+                                } else {
+                                    Equipment.publishUpdate(equipment.id, {query_configuration: false, updatedAt: result[0].updatedAt});
+                                    return cb(null);
+                                }
+                            });
+                    }
+                });
+            }
+        });
     }
 
 };

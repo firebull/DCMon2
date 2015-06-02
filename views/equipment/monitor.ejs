@@ -11,6 +11,30 @@
             <div class="text" data-bind="text: dc.description"></div>
         </a>
     </div>
+    <!-- ko if: errors().length > 0 -->
+    <div class="ui icon error message">
+        <i class="alert icon"></i>
+        <div class="content">
+            <div class="header">
+                <%= __('Errors occured') %>
+            </div>
+            <!-- ko foreach: {data: errors, as: 'error'} -->
+            <p data-bind="text: $data"></p>
+            <!-- /ko -->
+        </div>
+    </div>
+    <!-- /ko -->
+    <!-- ko if: infos().length > 0 -->
+    <div class="ui icon positive message">
+        <i class="close icon" data-bind="event: {click: closeInfos.bind(false)}"></i>
+        <i class="info icon"></i>
+        <div class="content">
+            <ul data-bind="foreach: {data: infos, as: 'info'}">
+                <li data-bind="text: info"></li>
+            </ul>
+        </div>
+    </div>
+    <!-- /ko -->
     <div class="ui divided equal height grid">
         <div class="ui row">
             <div class="three wide column">
@@ -35,7 +59,7 @@
                     <div class="item" data-bind="event: {click: $root.selectEq.bind($data, $index())}, css: {'active': Number($root.selectedEq()) == $index()}">
                         <div class="content">
                             <div class="header">
-                                <i class="icon circle" data-bind="css: {'green': eq.power_state == 'on', 'thin': eq.power_state == 'off'}, attr: {'title': $root.powerStatesByType[eq.power_state]}"></i>
+                                <i class="icon power" data-bind="css: {'green': eq.power_state == 'on', 'thin': eq.power_state == 'off'}, attr: {'title': $root.powerStatesByType[eq.power_state]}"></i>
                                 <span data-bind="text: eq.name"></span>
                             </div>
                             <i data-bind="visible: Number($root.selectedEq()) == $index()" class="arrow right floated medium icon"></i>
@@ -77,6 +101,20 @@
         <div class="content" data-bind="if: sensorsModalData">
             <div class="description" data-bind="template: {data: sensorsModalData,
                                                            name: 'sensors-limits-form'}"></div>
+        </div>
+        <div class="actions">
+            <div class="ui button"><%= __('Close') %></div>
+        </div>
+    </div>
+    <div class="ui modal" id="eqInfoModal">
+        <i class="close icon"></i>
+        <div class="header"></div>
+        <div class="content" data-bind="if: eqInfoModalData().length > 0">
+            <div class="description" data-bind="template: {data: eqInfoModalData,
+                                                           name: 'eq-info',
+                                                           as: 'infos'}">
+
+            </div>
         </div>
         <div class="actions">
             <div class="ui button"><%= __('Close') %></div>
@@ -204,10 +242,12 @@
         <a class="item" title="<%= __('Sensors limits configuration') %>" data-bind="event: {click: $root.sensorsLimits.bind(false)}">
             <i class="setting icon"></i> <%= __('Sensors') %>
         </a>
+        <a class="item" title="<%= __('Equipment information') %>" data-bind="event: {click: $root.eqInfo.bind(false)}">
+            <i class="info icon"></i> <%= __('Info') %>
+        </a>
         <div class="right menu">
             <div class="ui header item">
                 <i class="small power icon"></i>
-                Power
             </div>
             <a class="item" title="<%= __('Power.Action.On') %>" data-bind="visible: eq.power_state == 'off'">
                 <i class="green play icon"></i>
@@ -342,6 +382,26 @@
     </div>
     <div data-bind="attr: {'id': 'graph-' + name}"></div>
 </script>
+<script type="text/html" id="eq-info">
+    <div class="ui info message" data-bind="visible: $root.eqs()[$root.selectedEq()]().query_configuration">
+        <%= __('Waiting for refreshed data. It will be done during query cycle. Please, wait.') %>
+    </div>
+    <div class="ui feed" data-bind="foreach: { data: infos, as: 'info' }">
+        <div class="event">
+            <div class="content">
+                <div class="summary">
+                    <span data-bind="text: _.startCase(name)"></span>
+                    <div class="date" data-bind="text: moment(createdAt).format('HH:mm DD/MM/YY')"></div>
+                </div>
+                <pre data-bind="text: description"></pre>
+            </div>
+        </div>
+    </div>
+    <button class="ui fluid primary button" data-bind="event: {click: $root.eqInfoRefresh.bind(false)},
+                                                       css: {disabled: $root.eqs()[$root.selectedEq()]().query_configuration}">
+        <%= __('Refresh data') %>
+    </button>
+</script>
 <script type="text/javascript">
     var monitorEqViewModel = function(){
         var self = this;
@@ -349,6 +409,7 @@
         this.connected      = ko.observable(false);
         this.confirmActions = ko.observable(true);
         this.errors         = ko.observableArray();
+        this.infos          = ko.observableArray();
         this.modalErrors    = ko.observableArray();
         this.loading        = ko.observable(false);
         this.dcs            = ko.observableArray();
@@ -368,6 +429,7 @@
         this.newComment = ko.observable("");
         this.sensorsModalData = ko.observableArray();
         this.sensorsLastData  = {};
+        this.eqInfoModalData  = ko.observableArray();
 
         // Filter params
         this.minQueryDate = ko.observable(moment().subtract(2, 'hours').format('YYYY-MM-DD HH:mm'));
@@ -781,6 +843,54 @@
 
         }.bind(this);
 
+        this.eqInfo = function(){
+            var self = this;
+            var title = "<%= __('View equipment information') %>";
+            var eq = self.eqs()[self.selectedEq()]();
+
+            io.socket.get('/equipment/' + eq.id + '/info', function(answer, jwr){
+                    if (jwr.statusCode == 200){
+
+                        $('#eqInfoModal .header').html(title);
+
+                        self.eqInfoModalData(answer);
+
+                        $('#eqInfoModal').modal({onHide: function(){
+                                                    self.eqInfoModalData([]);
+                                                    }
+                                            }).modal('show').modal('refresh');
+
+                    } else if (jwr.status == 400 && answer.error){
+                        self.errors(answer.error);
+                    } else if (jwr.statusCode == 401){
+                        window.location.href = "/login";
+                    } else {
+                        self.errors.push('ERROR: ' + jwr.statusCode);
+                    }
+            });
+
+        }.bind(this);
+
+        this.eqInfoRefresh = function(){
+            var self = this;
+            var eq = self.eqs()[self.selectedEq()]();
+
+            io.socket.put('/equipment/' + eq.id, {query_configuration: true}, function(answer, jwr){
+                    if (jwr.statusCode == 200){
+                        eq.query_configuration = true;
+                        $('#eqInfoModal').modal('hide');
+                        self.infos.push("<%= __('New information will be requested during usual query cycle. Please, wait.') %>");
+                    } else if (jwr.status == 400 && answer.error){
+                        self.modalErrors(answer.error);
+                    } else if (jwr.statusCode == 401){
+                        window.location.href = "/login";
+                    } else {
+                        self.errors.push('ERROR: ' + jwr.statusCode);
+                    }
+            });
+
+        }.bind(this);
+
         this.filter = function(index){
             var self = this;
 
@@ -929,6 +1039,11 @@
 
         self.loadData();
 
+        this.closeInfos = function(){
+            var self = this;
+            self.infos([]);
+        }.bind(this);
+
         io.socket.on('connect', function(){
             io.socket.get('/equipment');
             io.socket.get('/notifications/subscribe/statusUpdates');
@@ -958,7 +1073,7 @@
           }
         });
 
-        io.socket.on('statusUpdates',function(obj){
+        /*io.socket.on('statusUpdates',function(obj){
           if (obj.message == 'eventsUpdated') {
             console.log('Events updated');
         } else if (obj.message == 'sensorsUpdated') {
@@ -966,7 +1081,7 @@
           } else {
             console.log('Unknown event: ' + obj.message);
           }
-        });
+      });*/
     };
 
     ko.applyBindings(new monitorEqViewModel(), document.getElementById("monitorPage"));

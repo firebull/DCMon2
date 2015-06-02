@@ -56,6 +56,31 @@ module.exports = {
                                         }
                                     });
                                 }
+                            },
+                            // Query information
+                            function(asyncCallback){
+                                if (item.configuration_proto == 'ipmi' || item.configuration_proto == 'ipmiv2'){
+                                    if (item.query_configuration === false){
+                                        return asyncCallback(null);
+                                    }
+
+                                    sails.logger.info('Query equipment information of %s (%s) trough IPMI', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                    IpmiService.queryFullInfo(item, function(err, data){
+                                        if (err){
+                                            sails.logger.error('Could not query equipment information IPMI: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                            asyncCallback(null); // Non critical error, lets continue
+                                        } else {
+                                            //Save information to DB and alert if needed
+                                            SaveService.saveInfo(item, data, function(err){
+                                                if (err){
+                                                    asyncCallback(err);
+                                                } else {
+                                                    asyncCallback(null);
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
                             }
                         ],
                         // set global eachLimit callback

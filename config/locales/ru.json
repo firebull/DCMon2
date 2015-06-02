@@ -132,5 +132,13 @@
 	"Max limit": "Max limit",
 	"Warn limit, %": "Warn limit, %",
 	"Sensor.Ignore": "Игнорировать",
-	"Save": "Save"
+	"Save": "Save",
+	"Equipment information": "Equipment information",
+	"View equipment information": "View equipment information",
+	"Refresh data": "Refresh data",
+	"Waiting for refreshed data. It will be done during query cicle. Please, wait.": "Waiting for refreshed data. It will be done during query cicle. Please, wait.",
+	"Errors occured": "Errors occured",
+	"New information will be requested during usual query cicle. Please, wait.": "New information will be requested during usual query cicle. Please, wait.",
+	"Waiting for refreshed data. It will be done during query cycle. Please, wait.": "Waiting for refreshed data. It will be done during query cycle. Please, wait.",
+	"New information will be requested during usual query cycle. Please, wait.": "New information will be requested during usual query cycle. Please, wait."
 }

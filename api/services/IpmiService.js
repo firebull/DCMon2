@@ -12,7 +12,7 @@ function ipmiShell(q, callback){
     _.each(q.command, function(command){
         params.push(command);
     });
-
+//console.log(params);
     var ipmitool = spawn('ipmitool', params);
 
     var err     = [],
@@ -120,9 +120,9 @@ module.exports = {
                      };
         var parser;
 
-        if (equipment.sensors_proto == 'ipmi'){
+        if (equipment.events_proto == 'ipmi'){
             query.proto = 'lan';
-        } else if (equipment.sensors_proto == 'ipmiv2'){
+        } else if (equipment.events_proto == 'ipmiv2'){
             query.proto = 'lanplus';
         }
 
@@ -168,5 +168,113 @@ module.exports = {
                 return callback(null);
             }
         });
-    }
+    },
+
+    queryFullInfo: function(equipment, callback){
+
+        if (equipment.query_configuration === false){
+            return callback(null);
+        }
+
+        var query = {'address':  equipment.address,
+                     'login':    equipment.login,
+                     'password': equipment.password,
+                     'command': ['chassis', 'status']
+                     };
+        var result = [];
+
+        if (equipment.configuration_proto == 'ipmi'){
+            query.proto = 'lan';
+        } else if (equipment.configuration_proto == 'ipmiv2'){
+            query.proto = 'lanplus';
+        }
+
+        // Let's get data in series
+        async.series([
+            function(cb){
+                ipmiShell(query, function(err, data){
+                    if (err.length > 0){
+                        return cb(err);
+                    } else {
+                        result.push({equipment: equipment.id, name: 'chassis status', description: data});
+                        return cb(null);
+                    }
+                });
+            },
+            function(cb){
+                query.command = ['mc', 'info'];
+                ipmiShell(query, function(err, data){
+                    if (err.length > 0){
+                        return cb(err);
+                    } else {
+                        result.push({equipment: equipment.id, name: 'mc info', description: data});
+                        return cb(null);
+                    }
+                });
+            },
+            function(cb){
+                query.command = ['mc', 'watchdog', 'get'];
+                ipmiShell(query, function(err, data){
+                    if (err.length > 0){
+                        return cb(err);
+                    } else {
+                        result.push({equipment: equipment.id, name: 'mc watchdog get', description: data});
+                        return cb(null);
+                    }
+                });
+            },
+            function(cb){
+                query.command = ['fru'];
+                ipmiShell(query, function(err, data){
+                    if (err.length > 0){
+                        return cb(err);
+                    } else {
+                        result.push({equipment: equipment.id, name: 'fru', description: data});
+                        return cb(null);
+                    }
+                });
+            },
+            function(cb){
+                query.command = ['sol', 'info'];
+                ipmiShell(query, function(err, data){
+                    if (err.length > 0){
+                        return cb(err);
+                    } else {
+                        result.push({equipment: equipment.id, name: 'sol info', description: data});
+                        return cb(null);
+                    }
+                });
+            },
+            function(cb){
+                query.command = ['user', 'list'];
+                ipmiShell(query, function(err, data){
+                    if (err.length > 0){
+                        // Do not return error as this request may be unsupported
+                        return cb(null);
+                    } else {
+                        result.push({equipment: equipment.id, name: 'user list', description: data});
+                        return cb(null);
+                    }
+                });
+            },
+            function(cb){
+                query.command = ['session', 'info', 'all'];
+                ipmiShell(query, function(err, data){
+                    if (err.length > 0){
+                        // Do not return error as this request may be unsupported
+                        return cb(null);
+                    } else {
+                        result.push({equipment: equipment.id, name: 'session info all', description: data});
+                        return cb(null);
+                    }
+                });
+            },
+        ], function(err){
+            if (err){
+                callback(err);
+            } else {
+                callback(null, result);
+            }
+        });
+    },
 };

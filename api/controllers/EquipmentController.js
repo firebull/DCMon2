@@ -181,7 +181,7 @@ module.exports = {
         if (by == 'dc') {
             query.filtered.query =  {
                                         multi_match: {
-                                                    query:  param,
+                                                    query:  Number(param),
                                                     type:   "cross_fields",
                                                     fields: [ "@fields.dc"]
                                                     }

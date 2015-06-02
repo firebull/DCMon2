@@ -53,7 +53,6 @@ module.exports = {
                 enum: ['ok', 'warn', 'error', 'alert', 'crit', 'emerg'],
                 defaultsTo: 'ok'
             },
-    configuration: 'json',
     query_configuration: {
                             type: 'boolean',
                             defaultsTo: true
@@ -67,6 +66,10 @@ module.exports = {
         model: 'rackmount',
         required: true,
     },
+    info: {
+        collection: 'eqinfo',
+        via: 'equipment'
+    },
     // Override toJSON instance method to remove password value
     toJSON: function() {
       var obj = this.toObject();
@@ -77,4 +80,3 @@ module.exports = {
 
 
 };
-
