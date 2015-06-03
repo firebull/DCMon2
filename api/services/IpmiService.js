@@ -12,7 +12,7 @@ function ipmiShell(q, callback){
     _.each(q.command, function(command){
         params.push(command);
     });
-//console.log(params);
+
     var ipmitool = spawn('ipmitool', params);
 
     var err     = [],
@@ -69,6 +69,11 @@ module.exports = {
             parser = eval(changeCase.pascal(equipment.vendor + 'ParseService'));
 
             parser.sensors(data, function(err, parsed){
+
+                if (err){
+                    return callback(err);
+                }
+
                 var currentStatus  = {};
                 var sensors_params = {};
 
@@ -104,9 +109,44 @@ module.exports = {
                     currentStatus.sensors_params = sensors_params;
                 }
 
-                callback(null, {'sensors': parsed.sensors, 'limits': sensors_params});
+                return callback(null, {'sensors': parsed.sensors, 'limits': sensors_params});
 
             });
+        });
+
+    },
+
+    queryGlobalSensors: function(equipment, callback){
+
+        var query = {'address':  equipment.address,
+                     'login':    equipment.login,
+                     'password': equipment.password,
+                     'command': ['chassis', 'status']
+                     };
+        var parser;
+
+        if (equipment.sensors_proto == 'ipmi'){
+            query.proto = 'lan';
+        } else if (equipment.sensors_proto == 'ipmiv2'){
+            query.proto = 'lanplus';
+        }
+
+        ipmiShell(query, function(err, data){
+
+            if (err.length > 0){
+                return callback(err, {});
+            }
+
+            parser = eval(changeCase.pascal(equipment.vendor + 'ParseService'));
+
+            parser.globalSensors(data, function(err, parsed){
+                if (err){
+                    return callback(err);
+                }
+
+                return callback(null, parsed);
+            });
+
         });
 
     },
@@ -191,16 +231,6 @@ module.exports = {
 
         // Let's get data in series
         async.series([
-            function(cb){
-                ipmiShell(query, function(err, data){
-                    if (err.length > 0){
-                        return cb(err);
-                    } else {
-                        result.push({equipment: equipment.id, name: 'chassis status', description: data});
-                        return cb(null);
-                    }
-                });
-            },
             function(cb){
                 query.command = ['mc', 'info'];
                 ipmiShell(query, function(err, data){

@@ -140,5 +140,6 @@
 	"Errors occured": "Errors occured",
 	"New information will be requested during usual query cicle. Please, wait.": "New information will be requested during usual query cicle. Please, wait.",
 	"Waiting for refreshed data. It will be done during query cycle. Please, wait.": "Waiting for refreshed data. It will be done during query cycle. Please, wait.",
-	"New information will be requested during usual query cycle. Please, wait.": "New information will be requested during usual query cycle. Please, wait."
+	"New information will be requested during usual query cycle. Please, wait.": "New information will be requested during usual query cycle. Please, wait.",
+	"Health": "Health"
 }

@@ -57,6 +57,27 @@ module.exports = {
                                     });
                                 }
                             },
+                            // Query global sensors
+                            function(asyncCallback){
+                                if (item.sensors_proto == 'ipmi' || item.sensors_proto == 'ipmiv2'){
+                                    sails.logger.info('Query global sensors of %s (%s) trough IPMI', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                    IpmiService.queryGlobalSensors(item, function(err, data){
+                                        if (err){
+                                            sails.logger.error('Could not query global sensors through IPMI: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                            asyncCallback(null); // Non critical error, lets continue
+                                        } else {
+                                            //Save global sensors to DB and alert if needed
+                                            SaveService.saveGlobalSensors(item, data, function(err){
+                                                if (err){
+                                                    asyncCallback(err);
+                                                } else {
+                                                    asyncCallback(null);
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            },
                             // Query information
                             function(asyncCallback){
                                 if (item.configuration_proto == 'ipmi' || item.configuration_proto == 'ipmiv2'){

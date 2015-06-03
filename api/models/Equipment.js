@@ -60,6 +60,8 @@ module.exports = {
     sensors_params: 'json',
     sensors_state: 'json',
     sensors_proto:  'string',
+    global_sensors_params: 'json',
+    global_sensors: 'json',
     events_proto:   'string',
     configuration_proto: 'string',
     rackmount: {

@@ -140,6 +140,72 @@ module.exports = {
         }
     },
 
+    /**
+     * Save JSON data of current Global sensors state
+     * Also parse data for alerts
+     * @param  {Object}   equipment [current equipment data from DB]
+     * @param  {Object}   data      [parsed data with sensors]
+     * @param  {Function} cb        [callback function]
+     * @return {string}             [error]
+     */
+    saveGlobalSensors: function(equipment, data, cb){
+        var normalStates = {
+            SystemPower       : 'on',
+            PowerOverload     : false,
+            PowerInterlock    : 'inactive',
+            MainPowerFault    : false,
+            PowerControlFault : false,
+            ChassisIntrusion  : 'inactive',
+            FrontPanelLockout : 'inactive',
+            DriveFault        : false,
+            CoolingFanFault   : false,
+        };
+
+        var sensorsParams = equipment.global_sensors_params;
+        var saveData = {global_sensors: {}};
+
+        // First check if sensors params are exists
+        // If not, create object {sensorName: false}
+        // False means that sensor is not excluded from check
+        if(sensorsParams === null){
+            sensorsParams = {};
+            _.forEach(data, function(item, sensorName){
+                sensorsParams[sensorName] = false;
+            });
+
+            saveData.global_sensors_params = sensorsParams;
+        }
+
+        _.forEach(data, function(item, sensorName){
+            // Check if sensor excluded from check
+            if (sensorsParams[sensorName] === false || sensorsParams[sensorName] === undefined){
+                // Check if sensor validates normal state
+                if (normalStates[sensorName] === undefined || item.current === normalStates[sensorName]){
+                    item.status = 'ok';
+                } else {
+                    sails.dcmonLogger.alert("Sensor '%s' is at fail state! Current: %s. Normal state is: %s.",
+                                            sensorName, item.current, normalStates[sensorName],
+                                            {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                    item.status = 'alert';
+                }
+            }
+
+            saveData.global_sensors[sensorName] = item;
+        });
+
+        Equipment.update({id: equipment.id}, saveData).exec(function(err, result){
+            if (err){
+                sails.dcmonLogger.emerg('Could not save global sensors data in DB: %s', err,
+                                        {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                return cb(err);
+            } else {
+                saveData.updatedAt = result[0].updatedAt;
+                Equipment.publishUpdate(equipment.id, saveData);
+                return cb(null);
+            }
+        });
+    },
+
     saveEvents: function(equipment, data, cb){
 
         var numberLevels = {
@@ -210,8 +276,9 @@ module.exports = {
                            filter: {
                                bool: {
                                        must:[
-                                               { miss : { field : "confirmed" }},
-                                               { term   : { '@fields.host': equipment.address}}
+                                               { exists : { field : "@fields.host" }},
+                                               { term   : { '@fields.host': equipment.address}},
+                                               { term   : { confirmed: false}}
                                        ]
                                }
                            }
@@ -221,11 +288,10 @@ module.exports = {
 
 
             sails.elastic.search({  index: 'logs',
-                                    size: 0,
-                                    search_type: 'count',
+                                    size: 10,
+                                    //search_type: 'count',
                                     body: query},
                 function (err, results){
-
                         if (err && err.length > 0){
                             return cb(err);
                         } else {

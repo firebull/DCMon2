@@ -100,6 +100,53 @@ module.exports = {
         callback(false, result);
     },
 
+    /**
+     * Parse IPMI `chassis status` answer
+     * @param  {raw text}   rawData  [IPMI answer]
+     * @param  {Function} callback(error, parsed)
+     * @return {Object}
+     *
+     * { sensor: // Sensor name in Pascal case
+     *   	{ name: 'originalName',
+     *    	  current: value,
+     *        timestamp: unixTimestamp
+     *      }
+     *  }
+     */
+    globalSensors: function(rawData, callback){
+        var pattern = XRegExp.cache('^(?<sensor>[\\w\\s\\-\\/]+)\\s*\\:\\s*(?<value>[\\w]+)', 'gi');
+        var splitted  = rawData.toString().split('\n');
+        var parsed, name, origName, value;
+        var result    = {};
+        var timestamp = moment().unix();
+
+        _.forEach(splitted, function(string){
+            parsed = XRegExp.exec(string, pattern);
+
+            if (parsed){
+                sensorName = parsed.sensor.trim();
+                name = changeCase.pascalCase(sensorName);
+
+                value = parsed.value.trim().toLowerCase();
+
+                // Convert to valid boolean if needed
+                if (value == 'true'){
+                    value = true;
+                } else if (value == 'false'){
+                    value = false;
+                }
+
+                result[name] = {
+                    name: sensorName,
+                    current: value,
+                    timestamp: timestamp
+                };
+            }
+        });
+
+        callback(null, result);
+    },
+
     events: function(rawData, callback){
 
         var pattern = XRegExp.cache('^(?<id>\\s*[0-9a-z]+)\\s*\\|\\s+(?<month>\\d{2})\\/(?<day>\\d{1,2})\\/(?<year>\\d{4})\\s+\\|\\s+(?<hour>\\d{2})\\:(?<minutes>\\d{2})\\:(?<sec>\\d{2})\\s+\\|\\s+(?<sentype>.+)\\s+\\|\\s+(?<desc>.+)\\s+\\|\\s+(?<senvalue>.+)$', 'gi');

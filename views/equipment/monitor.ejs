@@ -268,7 +268,7 @@
         </div>
     </div>
     <!-- ko template: 'filter-template' --><!-- /ko -->
-    <div class="ui fluid two item tabular menu">
+    <div class="ui fluid three item tabular menu">
         <a class="item" data-bind="event: {click: $root.showEvents.bind($data)}, css: {active: $root.detailsTab() == 'events'}">
             <i class="list icon"></i>
             <%= __('Events') %>
@@ -277,12 +277,19 @@
             <i class="dashboard icon"></i>
             <%= __('Sensors data') %>
         </a>
+        <a class="item" data-bind="event: {click: $root.showGlobalSensors.bind($data, eq.id)}, css: {active: $root.detailsTab() == 'health'}">
+            <i class="doctor icon"></i>
+            <%= __('Health') %>
+        </a>
     </div>
     <!-- ko if: $root.detailsTab() == 'events' -->
     <div data-bind="template: {name: 'events-item-template'}"></div>
     <!-- /ko -->
     <!-- ko if: $root.detailsTab() == 'sensors' -->
     <div data-bind="template: {name: 'graph-item-template', foreach: $root.eqGraphs, as: 'graph', afterRender: $root.renderGraph}"></div>
+    <!-- /ko -->
+    <!-- ko if: $root.detailsTab() == 'health' -->
+    <div data-bind="template: {name: 'health-item-template', data: $root.eqs()[$root.selectedEq()]}"></div>
     <!-- /ko -->
 </script>
 <script type="text/html" id="filter-template">
@@ -382,6 +389,19 @@
     </div>
     <div data-bind="attr: {'id': 'graph-' + name}"></div>
 </script>
+<script type="text/html" id="health-item-template">
+    <table class="ui very basic table" data-bind="if: $root.globalSensors().length > 0">
+        <tbody data-bind="foreach: $root.globalSensors">
+            <tr data-bind="css: {positive: status == 'ok', negative: status == 'alert'}">
+                <td data-bind="text: name"></td>
+                <td data-bind="text: current"></td>
+                <td>
+                    <i class="inverted circular icon" data-bind="css: {'green check': status == 'ok', 'red warning sign': status == 'alert'}"></i>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</script>
 <script type="text/html" id="eq-info">
     <div class="ui info message" data-bind="visible: $root.eqs()[$root.selectedEq()]().query_configuration">
         <%= __('Waiting for refreshed data. It will be done during query cycle. Please, wait.') %>
@@ -430,6 +450,7 @@
         this.sensorsModalData = ko.observableArray();
         this.sensorsLastData  = {};
         this.eqInfoModalData  = ko.observableArray();
+        this.globalSensors    = ko.observableArray();
 
         // Filter params
         this.minQueryDate = ko.observable(moment().subtract(2, 'hours').format('YYYY-MM-DD HH:mm'));
@@ -546,6 +567,12 @@
         this.showEvents = function(){
             this.detailsTab('events');
             this.loadEvents();
+        }.bind(this);
+
+        this.showGlobalSensors = function(){
+            var eq = self.eqs()[self.selectedEq()]();
+            this.globalSensors(_.values(eq.global_sensors));
+            this.detailsTab('health');
         }.bind(this);
 
         this.loadGraphs = function(){
