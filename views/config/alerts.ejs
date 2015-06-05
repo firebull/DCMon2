@@ -1,0 +1,266 @@
+<div id="alertsControlPage">
+    <h3 class="ui left floated header">
+        <i class="alarm outline icon"></i>
+        <div class="content">
+            <%= __('Alerts list') %>
+        </div>
+    </h3>
+
+    <button class="ui right floated small orange button" data-bind="event: {click: alertCreateForm.bind(false, false)}">
+        <i class="plus icon"></i>
+        <%= __('New Alert') %>
+    </button>
+
+    <table class="ui padded table" id="alertsListTable">
+
+        <tbody data-bind="foreach: {data: alerts, as: 'alert'}">
+            <tr>
+                <td data-bind="text: name"></td>
+                <td data-bind="foreach: {data: levels}">
+                    <div class="ui tiny label" data-bind="text: _.capitalize(name), css: $root.levelColor(name)"></div>
+                </td>
+                <td>
+                    <button class="ui primary small button">
+                        <i class="user icon"></i>
+                        <%= __('Users') %>
+                    </button>
+                </td>
+                <td>
+                    <button class="ui primary small button">
+                        <i class="server icon"></i>
+                        <%= __('Equipment') %>
+                    </button>
+                </td>
+                <td>
+                    <button data-bind="event: {click: $root.alertCreateForm.bind(false, $index())}" class="ui orange small button">
+                        <%= __('Edit') %>
+                    </button>
+                    <button data-bind="event: {click: $root.alertDelete.bind($data)}" class="ui red small button">
+                        <%= __('Delete') %>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="ui small modal" id="editModal">
+        <i class="close icon"></i>
+        <div class="header"></div>
+        <div class="content" data-bind="if: modalData && modalTemplate">
+            <div class="description" data-bind="template: {data: modalData,
+                                                           name: modalTemplate}"></div>
+        </div>
+        <div class="actions">
+            <div class="ui button"><%= __('Cancel') %></div>
+        </div>
+    </div>
+</div>
+<script type="text/html" id="alert-form">
+    <div class="ui error message" data-bind="visible: $root.modalErrors().length > 0">
+        <ul data-bind="foreach: $root.modalErrors">
+            <li data-bind="text: $data"></li>
+        </ul>
+    </div>
+    <div class="ui form">
+        <div class="field">
+            <label><%= __('Alert Name') %></label>
+            <input type="text" data-bind="value: $root.modalData().name"/>
+        </div>
+        <h4 class="ui dividing header"><%= __('Alert Levels') %></h4>
+        <!-- ko foreach: {data: $root.levels, as: 'alertLevel'} -->
+        <div class="field">
+            <div class="ui toggle checkbox">
+              <input type="checkbox" data-bind="attr: {'id': 'level' + level, name: 'level' + level}, value: id, checked: $root.modalData().checkedLevels">
+              <label data-bind="text: longname, attr: {for: 'level' + level}"></label>
+            </div>
+        </div>
+        <!-- /ko -->
+        <button data-bind="event: {click: $root.saveAlert.bind(false)}" class="ui primary fluid button">
+            <i class="save icon"></i>
+            <%= __('Save') %>
+        </button>
+    </div>
+    <div class="ui info message">
+        <%= __('Users and Equipment can be added later') %>
+    </div>
+</script>
+<script type="text/javascript">
+    var configAlertsViewModel = function(){
+        var self = this;
+
+        this.errors = ko.observableArray();
+        this.modalErrors = ko.observableArray();
+        this.loading = ko.observable(false);
+        this.modalTemplate = ko.observable(false);
+        this.modalData = ko.observable(false);
+        this.modalDataIndex = ko.observable(false);
+
+        this.alerts = ko.observableArray();
+        this.levels = ko.observableArray();
+
+        this.alertCreateForm = function(id){
+            var self = this;
+            var title;
+
+            if (id === false){
+                title = "<%= __('Add new Alert') %>";
+                var fields = { name   : "",
+                               checkedLevels : [1, 2, 3, 4] // IDs of Levels, NOT number of levels!
+                               };
+
+                self.modalData(fields);
+            } else {
+                title = "<%= __('Update Alert') %>";
+                var alert = self.alerts()[id]();
+                alert.checkedLevels = _.pluck(alert.levels, 'id');
+                self.modalData(alert);
+                self.modalDataIndex(id);
+            }
+
+            self.showModal('small', title, "alert-form");
+        }.bind(this);
+
+        this.saveAlert = function(){
+            var self = this;
+            var alert = self.modalData();
+            var dataToSave = {};
+
+            if (alert.name.trim().length > 0 && alert.checkedLevels.length > 0){
+                dataToSave.name = alert.name;
+                dataToSave.levels = alert.checkedLevels;
+
+                if (alert.id === undefined){
+                    // Create
+                    io.socket.put('/alert/create', dataToSave, function(data, jwr){
+                        if (jwr.statusCode == 201){
+
+                            self.alerts.push(ko.observable(data));
+
+                            $('#editModal').modal('hide');
+                        } else {
+
+                            self.modalErrors.push('ERROR: ' + jwr.statusCode);
+                        }
+                    });
+                } else {
+                    // Update
+                    updateUrl = '/alert/update/' + alert.id;
+                    io.socket.put(updateUrl, dataToSave, function(data, jwr){
+                        if (jwr.statusCode == 200){
+                            var index = self.modalDataIndex();
+
+                            self.alerts()[index](data);
+
+                            $('#editModal').modal('hide');
+                        } else {
+                            console.log(jwr);
+                            self.modalErrors.push('ERROR: ' + jwr.statusCode);
+                        }
+                    });
+                }
+            }
+        }.bind(this);
+
+        // Confirmation for delete action
+        this.alertDelete = function(alert){
+            var self = this;
+
+            swal({  title: "<%= __('Delete this Alert?') %>",
+                    text: "<%= __('This will stop sending notifications through this alert') %>",
+                    type: "warning",
+                    confirmButtonText: "<%= __('Yes, delete it') %>",
+                    cancelButtonText: "<%= __('Cancel') %>",
+                    html: false,
+                    showCancelButton: true },
+                function(){
+                    self.alertDeleteAction(alert);
+                });
+
+        }.bind(this);
+
+        this.alertDeleteAction = function(alert){
+            var self = this;
+
+            io.socket.delete('/alert/' + alert.id, function(answer, jwr){
+                if (jwr.statusCode == 200){
+                    self.alerts.remove(function(item){return item().id == alert.id;});
+                } else if (jwr.statusCode == 400 && answer.errors !== undefined){
+                    self.errors.push(answer.errors);
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+        }.bind(this);
+
+        this.levelColor = function(level){
+
+            if (level == 'info'){
+                return 'blue';
+            } else if (level == 'warn'){
+                return 'orange';
+            } else if (level != 'info' && level != 'warn'){
+                return 'red';
+            } else {
+                return '';
+            }
+
+        };
+
+        this.loadData = function(){
+            var self = this;
+
+            io.socket.get('/alert', function(data, jwr){
+                if (jwr.statusCode == 200){
+                    var alerts = [];
+
+                    _.forEach(data, function(item){
+                        alerts.push(ko.observable(item));
+                    });
+
+                    self.alerts(alerts);
+                } else if (jwr.status == 400 && data.error){
+                    self.errors(data.error);
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+            io.socket.get('/alertlevels', function(data, jwr){
+                if (jwr.statusCode == 200){
+                    self.levels(data);
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+        }.bind(this);
+
+        self.loadData();
+
+        this.showModal = function(size, title, template){
+            var self = this;
+
+            $('#editModal').removeClass('small large fullscreen').addClass(size);
+            $('#editModal .header').html(title);
+
+            self.modalTemplate(template);
+
+            $('#editModal').modal({onHide: function(){
+                                        self.modalTemplate(false);
+                                        self.modalData(false);
+                                        self.modalDataIndex(false);
+                                        self.modalErrors([]);
+                                        }
+                                }).modal('show').modal('refresh');
+
+            self.loading(false);
+
+        }.bind(this);
+
+    };
+
+    ko.applyBindings(new configAlertsViewModel(), document.getElementById("alertsControlPage"));
+</script>

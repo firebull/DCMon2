@@ -7,8 +7,6 @@
 
 module.exports = {
 
-
-
   /**
    * `ConfigController.eq()`
    */
@@ -24,10 +22,16 @@ module.exports = {
   },
 
   /**
+   * `ConfigController.alerts()`
+   */
+  alerts: function (req, res) {
+      return res.view({'url': req.url});
+  },
+
+  /**
    * `ConfigController.options()`
    */
   options: function (req, res) {
     return res.json({'url': req.url});
   }
 };
-

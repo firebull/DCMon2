@@ -1,5 +1,4 @@
 var User = {
-  // Enforce model schema in the case of schemaless databases
   schema: true,
   connection: 'dcmonMysqlServer',
 
@@ -26,7 +25,10 @@ var User = {
                     via: 'user' },
       group     : { model: 'group',
                     via: 'users',
-                    required: true }
+                    required: true },
+      alerts    : { collection: 'alert',
+                    via: 'users',
+                    dominant: false }
   },
   //model validation messages definitions
   validationMessages: { //hand for i18n & l10n

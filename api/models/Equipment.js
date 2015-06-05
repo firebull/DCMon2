@@ -72,6 +72,10 @@ module.exports = {
         collection: 'eqinfo',
         via: 'equipment'
     },
+    alerts: { collection: 'alert',
+              via: 'equipments',
+              dominant: false},
+
     // Override toJSON instance method to remove password value
     toJSON: function() {
       var obj = this.toObject();

@@ -157,6 +157,27 @@ module.exports.bootstrap = function(cb) {
         }
     });
 
+    // Create default AlertLevels
+    AlertLevels.find().exec(function(err, levels){
+        if (levels.length < 5){
+            AlertLevels.destroy({level: {'<=': 4}}).exec(function(err){
+                var levels = [
+                    {id: 1, level: 0, name: 'emerg', longname: 'Emergency'},
+                    {id: 2, level: 1, name: 'alert', longname: 'Alert'},
+                    {id: 3, level: 2, name: 'crit',  longname: 'Critical'},
+                    {id: 4, level: 3, name: 'error', longname: 'Error'},
+                    {id: 5, level: 4, name: 'warn',  longname: 'Warning'}
+                ];
+
+                AlertLevels.create(levels, function(err, created){
+                    if (err){
+                        sails.log.error('Could not create Alert levels: %s. Alerts WILL NOT WORK!!!', err);
+                    }
+                });
+            });
+        }
+    });
+
     // It's very important to trigger this callback method when you are finished
     // with the bootstrap!  (otherwise your server will never lift, since it's waiting on the bootstrap)
     cb();

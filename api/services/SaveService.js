@@ -288,8 +288,8 @@ module.exports = {
 
 
             sails.elastic.search({  index: 'logs',
-                                    size: 10,
-                                    //search_type: 'count',
+                                    size: 0,
+                                    search_type: 'count',
                                     body: query},
                 function (err, results){
                         if (err && err.length > 0){

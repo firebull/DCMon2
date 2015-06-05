@@ -11,9 +11,12 @@
         <i class="users icon"></i>
         <%= __('Users') %>
     </a>
+    <a href="/config/alerts" class="<% if (url === '/config/alerts') { %>active item<% } else { %>item<% }%>">
+        <i class="alarm icon"></i>
+        <%= __('Alert configuration') %>
+    </a>
     <a href="/config/options" class="<% if (url === '/config/options') { %>active item<% } else { %>item<% }%>">
         <i class="configure icon"></i>
         <%= __('Options') %>
     </a>
 </div>
-

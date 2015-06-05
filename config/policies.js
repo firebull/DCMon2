@@ -86,4 +86,17 @@ module.exports.policies = {
     'delete'  : ['passport', 'localize', 'sessionAuth', 'isAdmin']
   },
 
+  'AlertController': {
+    '*'       : ['passport', 'localize', 'sessionAuth', 'isManager'],
+    'destroy' : ['passport', 'localize', 'sessionAuth', 'isAdmin'],
+    'update'  : ['passport', 'localize', 'sessionAuth', 'isAdmin'],
+    'create'  : ['passport', 'localize', 'sessionAuth', 'isManager']
+  },
+
+  'AlertLevelsController': {
+    '*'      : ['passport', 'localize', 'sessionAuth'],
+    'destroy': false,
+    'update' : false,
+    'create' : false
+  },
 };

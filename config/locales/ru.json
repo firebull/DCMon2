@@ -141,5 +141,16 @@
 	"New information will be requested during usual query cicle. Please, wait.": "New information will be requested during usual query cicle. Please, wait.",
 	"Waiting for refreshed data. It will be done during query cycle. Please, wait.": "Waiting for refreshed data. It will be done during query cycle. Please, wait.",
 	"New information will be requested during usual query cycle. Please, wait.": "New information will be requested during usual query cycle. Please, wait.",
-	"Health": "Health"
+	"Health": "Health",
+	"Alert configuration": "Alert configuration",
+	"Alerts list": "Alerts list",
+	"New Alert": "New Alert",
+	"Configure Users": "Configure Users",
+	"Add new Alert": "Add new Alert",
+	"Update Alert": "Update Alert",
+	"Alert Name": "Alert Name",
+	"Alert Levels": "Alert Levels",
+	"Users and Equipment can be added later": "Users and Equipment can be added later",
+	"Delete this Alert?": "Delete this Alert?",
+	"This will stop sending notifications through this alert": "This will stop sending notifications through this alert"
 }

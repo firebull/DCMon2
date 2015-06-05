@@ -187,5 +187,38 @@ module.exports = {
         return res.badRequest('This lang is not availiable');
     }
   }
-};
 
+  /*
+  // Define this methods in controller as User model
+  // is populated with Equipment model and Blueprint calls
+  // may be extrimely heavy on big number of eqs
+  find: function(req, res){
+      User.find().populate('group').exec(function(err, found){
+          if (err){
+              sails.log.error(err);
+              return res.badRequest();
+          } else {
+              return res.ok(found);
+          }
+      });
+  },
+
+  findOne: function(req, res){
+      if (req.params && req.params.id !== undefined){
+          User.findOne({id: req.params.id}).populate('group').exec(function(err, found){
+              if (err){
+                  sails.log.error(err);
+                  return res.badRequest();
+              } else {
+                  return res.ok(found);
+              }
+          });
+      } else {
+          return res.badRequest();
+      }
+  }
+
+
+   */
+
+};
