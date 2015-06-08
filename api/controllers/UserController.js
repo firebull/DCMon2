@@ -186,12 +186,11 @@ module.exports = {
     } else {
         return res.badRequest('This lang is not availiable');
     }
-  }
+  },
 
-  /*
   // Define this methods in controller as User model
   // is populated with Equipment model and Blueprint calls
-  // may be extrimely heavy on big number of eqs
+  // may be extrimely heavy on big number of alerts
   find: function(req, res){
       User.find().populate('group').exec(function(err, found){
           if (err){
@@ -205,7 +204,7 @@ module.exports = {
 
   findOne: function(req, res){
       if (req.params && req.params.id !== undefined){
-          User.findOne({id: req.params.id}).populate('group').exec(function(err, found){
+          User.findOne({id: req.params.id}).populate('group').populate('passports').exec(function(err, found){
               if (err){
                   sails.log.error(err);
                   return res.badRequest();
@@ -218,7 +217,5 @@ module.exports = {
       }
   }
 
-
-   */
 
 };

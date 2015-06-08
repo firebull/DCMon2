@@ -15,6 +15,46 @@ module.exports = {
 
     },
 
+	/**
+	 * Get simple list of equipments
+	 * Just ID, name, type, address, pos_in_rack, rack
+	 * @return {Array}     Array of objects
+	 */
+	simpleList: function(req, res){
+		Equipment.find({select: ['id', 'name', 'description', 'address', 'pos_in_rack', 'rackmount'],
+		                sort: {rackmount: 1, pos_in_rack: 1}})
+				.populate('rackmount')
+				.exec(function(err, eqs){
+					if (err){
+						sails.logger.error('Could not get equipment list: %s', err);
+						return res.serverError();
+					} else {
+						// Group By Rack
+						var groupedEqs = [];
+						var rack = {rackmount: eqs[0].rackmount, eqs: []};
+						var lastRack = eqs[0].rackmount.id;
+						var currRack;
+
+						_.forEach(eqs, function(eq){
+							currRack = eq.rackmount;
+							delete(eq.rackmount);
+							
+							rack.eqs.push(eq);
+
+							if (currRack.id != lastRack){
+								groupedEqs.push(rack);
+								lastRack = currRack.id;
+								rack = {rackmount: currRack, eqs: []};
+							}
+						});
+
+						groupedEqs.push(rack);
+
+						return res.ok(groupedEqs);
+					}
+				});
+	},
+
     graphs: function(req, res){
         var ip     = require('ip').toLong;
 		var XRegExp = require('xregexp').XRegExp;

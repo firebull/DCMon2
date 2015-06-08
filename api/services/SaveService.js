@@ -84,6 +84,7 @@ module.exports = {
             // If there are sensors in Alert or Warning state - save them
             if (_.size(sensorsStates.warn) > 0 || _.size(sensorsStates.alert) > 0){
                 currentState.sensors_state = sensorsStates;
+                Equipment.message(equipment.id, {message: 'eventsUpdated'});
             } else {
                 currentState.sensors_state = {};
                 currentState.sensor_status = 'ok';
@@ -251,6 +252,7 @@ module.exports = {
                     return cb(err);
                 } else {
                     sails.sockets.blast('statusUpdates', {message: 'eventsUpdated'});
+                    Equipment.message(equipment.id, {message: 'eventsUpdated'});
                     Equipment.publishUpdate(equipment.id, {event_status: result[0].event_status, updatedAt: result[0].updatedAt});
                     return cb(null);
                 }
@@ -316,6 +318,7 @@ module.exports = {
                                                          return cb(err);
                                                      } else {
                                                          sails.sockets.blast('statusUpdates', {message: 'eventsUpdated'});
+                                                         Equipment.message(equipment.id, {message: 'eventsUpdated'});
                                                          Equipment.publishUpdate(equipment.id, {event_status: result[0].event_status, updatedAt: result[0].updatedAt});
                                                          return cb(null);
                                                      }

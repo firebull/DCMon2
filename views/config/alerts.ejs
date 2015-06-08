@@ -20,18 +20,18 @@
                     <div class="ui tiny label" data-bind="text: _.capitalize(name), css: $root.levelColor(name)"></div>
                 </td>
                 <td>
-                    <button class="ui primary small button">
+                    <button data-bind="event: {click: $root.alertUsersForm.bind(false, $index())}" class="ui primary small button">
                         <i class="user icon"></i>
                         <%= __('Users') %>
                     </button>
                 </td>
                 <td>
-                    <button class="ui primary small button">
+                    <button data-bind="event: {click: $root.alertEqsForm.bind(false, $index())}" class="ui primary small button">
                         <i class="server icon"></i>
                         <%= __('Equipment') %>
                     </button>
                 </td>
-                <td>
+                <td class="right aligned">
                     <button data-bind="event: {click: $root.alertCreateForm.bind(false, $index())}" class="ui orange small button">
                         <%= __('Edit') %>
                     </button>
@@ -74,13 +74,62 @@
             </div>
         </div>
         <!-- /ko -->
-        <button data-bind="event: {click: $root.saveAlert.bind(false)}" class="ui primary fluid button">
+        <button data-bind="event: {click: $root.saveAlert.bind(false, 'levels')}" class="ui primary fluid button">
             <i class="save icon"></i>
             <%= __('Save') %>
         </button>
     </div>
     <div class="ui info message">
         <%= __('Users and Equipment can be added later') %>
+    </div>
+</script>
+<script type="text/html" id="alert-users-form">
+    <div class="ui error message" data-bind="visible: $root.modalErrors().length > 0">
+        <ul data-bind="foreach: $root.modalErrors">
+            <li data-bind="text: $data"></li>
+        </ul>
+    </div>
+    <div class="ui form">
+        <h4 class="ui dividing header"><%= __('Users to notify') %></h4>
+        <!-- ko foreach: {data: $root.users, as: 'user'} -->
+        <div class="field">
+            <div class="ui toggle checkbox">
+              <input type="checkbox" data-bind="attr: {'id': 'user' + id, name: 'user' + id}, value: id, checked: $root.modalData().checkedUsers">
+              <label data-bind="text: $root.userName($data), attr: {for: 'user' + id}"></label>
+            </div>
+        </div>
+        <!-- /ko -->
+        <button data-bind="event: {click: $root.saveAlert.bind(false, 'users')}" class="ui primary fluid button">
+            <i class="save icon"></i>
+            <%= __('Save') %>
+        </button>
+    </div>
+</script>
+<script type="text/html" id="alert-eqs-form">
+    <div class="ui error message" data-bind="visible: $root.modalErrors().length > 0">
+        <ul data-bind="foreach: $root.modalErrors">
+            <li data-bind="text: $data"></li>
+        </ul>
+    </div>
+    <div class="ui form">
+        <!-- ko foreach: {data: $root.eqs, as: 'rack'} -->
+        <h4 class="ui dividing header">
+            <span data-bind="text: rack.rackmount.name"></span>
+            <div data-bind="text: rack.rackmount.description" class="sub header"></div>
+        </h4>
+            <!-- ko foreach: {data: rack.eqs, as: 'eq'} -->
+            <div class="field">
+                <div class="ui toggle checkbox">
+                  <input type="checkbox" data-bind="attr: {'id': 'eq' + id, name: 'eq' + id}, value: id, checked: $root.modalData().checkedEqs">
+                  <label data-bind="text: $root.eqName($data), attr: {for: 'eq' + id}"></label>
+                </div>
+            </div>
+            <!-- /ko -->
+        <!-- /ko -->
+        <button data-bind="event: {click: $root.saveAlert.bind(false, 'eqs')}" class="ui primary fluid button">
+            <i class="save icon"></i>
+            <%= __('Save') %>
+        </button>
     </div>
 </script>
 <script type="text/javascript">
@@ -96,6 +145,8 @@
 
         this.alerts = ko.observableArray();
         this.levels = ko.observableArray();
+        this.users  = ko.observableArray();
+        this.eqs    = ko.observableArray();
 
         this.alertCreateForm = function(id){
             var self = this;
@@ -119,14 +170,26 @@
             self.showModal('small', title, "alert-form");
         }.bind(this);
 
-        this.saveAlert = function(){
+        this.saveAlert = function(type){
             var self = this;
             var alert = self.modalData();
             var dataToSave = {};
 
-            if (alert.name.trim().length > 0 && alert.checkedLevels.length > 0){
+            if (alert.name.trim().length > 0){
                 dataToSave.name = alert.name;
-                dataToSave.levels = alert.checkedLevels;
+
+                if (type == 'levels'){
+                    dataToSave.levels = alert.checkedLevels;
+                    if (alert.checkedLevels.length == 0){
+                        return false;
+                    }
+                } else if (type == 'users'){
+                    dataToSave.users = alert.checkedUsers;
+                } else if (type == 'eqs'){
+                    dataToSave.equipments = alert.checkedEqs;
+                } else {
+                    return false;
+                }
 
                 if (alert.id === undefined){
                     // Create
@@ -192,6 +255,99 @@
 
         }.bind(this);
 
+        this.alertUsersForm = function(id){
+            var self = this;
+            var title;
+
+            title = "<%= __('Users configuration for Alert') %>";
+            var alert = self.alerts()[id]();
+
+            io.socket.get('/alert/usersOfAlert/' + alert.id, function(data, jwr){
+                if (jwr.statusCode == 200){
+                    alert.checkedUsers = data;
+                    self.modalData(alert);
+                    self.modalDataIndex(id);
+
+                    self.showModal('small', title, "alert-users-form");
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+        }.bind(this);
+
+        this.userName = function(user){
+
+            if (user.first_name && user.last_name){
+                return user.first_name + ' ' + user.last_name + ' (' + user.username + '), ' + user.group.description;
+            } else if (user.first_name){
+                return user.first_name + ' (' + user.username + '), ' + user.group.description;
+            } else if (user.last_name){
+                return user.last_name + ' (' + user.username + '), ' + user.group.description;
+            } else {
+                return user.username + ', ' + user.group.description;
+            }
+        }
+
+        this.alertEqsForm = function(id){
+            var self = this;
+            var title;
+
+            title = "<%= __('Equipment configuration for Alert') %>";
+            var alert = self.alerts()[id]();
+
+            async.parallel([
+                function(callback){
+                    io.socket.get('/alert/eqsOfAlert/' + alert.id, function(data, jwr){
+                        if (jwr.statusCode == 200){
+                            alert.checkedEqs = data;
+                            return callback(null);
+                        } else if (jwr.statusCode == 401){
+                            window.location.href = "/login";
+                            return callback(null);
+                        } else {
+                            return callback('ERROR: ' + jwr.statusCode);
+                        }
+                    });
+                },
+                function(callback){
+                    if (self.eqs().length == 0){
+                        io.socket.get('/equipment/simpleList', function(data, jwr){
+                            if (jwr.statusCode == 200){
+                                self.eqs(data);
+                                return callback(null);
+                            } else if (jwr.statusCode == 401){
+                                window.location.href = "/login";
+                                return callback(null);
+                            } else {
+                                return callback('ERROR: ' + jwr.statusCode);
+                            }
+                        });
+                    } else {
+                        return callback(null);
+                    }
+                }
+            ], function(err){
+                if (err){
+                    self.errors.push(err);
+                } else {
+                    self.modalData(alert);
+                    self.modalDataIndex(id);
+
+                    self.showModal('small', title, "alert-eqs-form");
+                }
+            });
+
+
+
+        }.bind(this);
+
+        this.eqName = function(eq){
+            return 'ID' + eq.id + ' ' + eq.name + ' (' + eq.description + ')';
+        };
+
         this.levelColor = function(level){
 
             if (level == 'info'){
@@ -236,6 +392,17 @@
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }
             });
+
+            io.socket.get('/user', function(data, jwr){
+                if (jwr.statusCode == 200){
+                    self.users(data);
+                } else if (jwr.statusCode == 401){
+                    window.location.href = "/login";
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
         }.bind(this);
 
         self.loadData();

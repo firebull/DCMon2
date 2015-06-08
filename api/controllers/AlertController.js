@@ -90,7 +90,7 @@ module.exports = {
 	 * @param  {Integer} req.params.id Alert ID
 	 * @return {Array}
 	 */
-	eqOfAlert: function(req, res){
+	eqsOfAlert: function(req, res){
 		if (!req.params.id){
 			return res.badRequest();
 		}
@@ -105,6 +105,30 @@ module.exports = {
 				return res.serverError();
 			} else {
 				return res.ok(_.pluck(eqs, 'id'));
+			}
+		});
+	},
+
+	/**
+	 * Get all Equipment IDs with requested Alert
+	 * @param  {Integer} req.params.id Alert ID
+	 * @return {Array}
+	 */
+	usersOfAlert: function(req, res){
+		if (!req.params.id){
+			return res.badRequest();
+		}
+
+		var query = util.format("SELECT `User`.`id` FROM `equipment` AS `User` \
+								JOIN `alert_users__user_alerts` AS `AlertEq` \
+								ON (`AlertEq`.`alert_users` = '%d' \
+									AND `AlertEq`.`user_alerts` = `User`.`id`)", req.params.id);
+
+	    Equipment.query(query, function(err, users){
+			if (err){
+				return res.serverError();
+			} else {
+				return res.ok(_.pluck(users, 'id'));
 			}
 		});
 	}

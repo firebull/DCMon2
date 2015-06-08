@@ -76,6 +76,47 @@ module.exports.bootstrap = function(cb) {
 
     winston.addColors(dcmonLevels.colors);
 
+    // Send notifications
+    sails.dcmonLogger.on('logging', function (transport, level, msg, meta) {
+        if (transport.name != 'emerg-console'){
+            return true;
+        }
+
+        async.waterfall([
+            // Get users list to notify
+            function(callback){
+                CommonService.alertUsersList(meta.eq, level, function(err, users){
+                    if (err){
+                        return callback(err);
+                    } else {
+                        return callback(null, users);
+                    }
+                });
+            },
+            // Send notifications
+            function(users, callback){
+                if (users !== undefined && users.length > 0){
+                    CommonService.notifyUsers(level, msg, meta, users, function(err){
+                        if (err){
+                            return callback(err);
+                        } else {
+                            sails.logger.warn('Sent notifications successfully');
+                            return callback(null);
+                        }
+                    });
+
+                } else {
+                    sails.logger.warn('No users to notify. May be you need to configure alerts?');
+                    return callback(null);
+                }
+            }
+        ], function(err){
+            if (err){
+                sails.logger.error('Could not notify administrators: %s', err);
+            }
+        });
+    });
+
     sails.logger = new (winston.Logger)({
       transports: [
         new (winston.transports.Console)({

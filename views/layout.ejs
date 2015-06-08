@@ -62,6 +62,7 @@
     <script src="/js/dependencies/sails.io.js"></script>
     <script src="/js/dependencies/jquery.min.js"></script>
     <script src="/js/dependencies/moment.min.js"></script>
+    <script src="/js/dependencies/async.js"></script>
     <script src="/js/dependencies/dygraph-combined.js"></script>
     <script src="/js/dependencies/jquery.datetimepicker.js"></script>
     <script src="/js/dependencies/knockout.js"></script>
@@ -278,7 +279,7 @@
         io.socket.on('connect', function(){
             self.connected(true);
             self.loadStates();
-            io.socket.get('/notifications/subscribe/statusUpdates');
+            io.socket.get('/notifications/subscribe/statusUpdates', {'connection': 'layout'});
             swal.close();
         });
 
@@ -295,6 +296,7 @@
         });
 
         io.socket.on('statusUpdates',function(obj){
+            console.log(obj);
             self.loadStates();
         });
 

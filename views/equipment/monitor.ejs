@@ -13,6 +13,7 @@
     </div>
     <!-- ko if: errors().length > 0 -->
     <div class="ui icon error message">
+        <i class="close icon" data-bind="event: {click: closeErrors.bind(false)}"></i>
         <i class="alert icon"></i>
         <div class="content">
             <div class="header">
@@ -44,7 +45,15 @@
                 <div class="ui small divided selection list" data-bind="foreach: {data: racks, as: 'rack'}">
                     <div class="item" data-bind="event: {click: $root.selectRack.bind($data)}, css: {'active': Number($root.selectedRack()) == $index()}">
                         <div class="content">
-                            <div class="header" data-bind="text: rack.name"></div>
+                            <div class="header">
+                                <i class="icon" data-bind="css: {'green circle': rack.state() == 'ok',
+                                                                 'orange warning circle': rack.state() == 'warn',
+                                                                 'red warning sign': rack.state() == 'alert',
+                                                                 'circle': !rack.state()
+
+                                }"></i>
+                                <span data-bind="text: rack.name"></span>
+                            </div>
                             <i data-bind="visible: Number($root.selectedRack()) == $index()" class="arrow right floated medium icon"></i>
                             <div class="description" data-bind="text: rack.description"></div>
                         </div>
@@ -480,8 +489,7 @@
             self.selectedDc(dc.id);
             var racks = [];
             $.each(dc.racks, function(index, item){
-                item.errors = ko.observable(0);
-                item.warning = ko.observable(0);
+                item.state = ko.observable(false);
                 racks.push(item);
             });
 
@@ -491,6 +499,8 @@
             if (self.selectedRack() < 0){
                 self.selectRack(self.racks()[0]);
             }
+
+            self.racksStates();
 
         }.bind(this);
 
@@ -1061,19 +1071,43 @@
                 }
             });
 
-
         }.bind(this);
 
-        self.loadData();
+        this.racksStates = function(){
+            var self = this;
+
+            if (self.selectedDc()){
+                io.socket.get('/rackmount/states/' + self.selectedDc(), function(data, jwr){
+                    if (jwr.statusCode == 200){
+                        _.forEach(self.racks(), function(rack){
+                            if (data[rack.id] !== undefined){
+                                rack.state(data[rack.id]);
+                            }
+                        });
+
+                    } else if (jwr.statusCode == 401){
+                        window.location.href = "/login";
+                    } else {
+                        self.errors.push('ERROR: ' + jwr.statusCode);
+                    }
+                });
+            }
+
+        }.bind(this);
 
         this.closeInfos = function(){
             var self = this;
             self.infos([]);
         }.bind(this);
 
+        this.closeErrors = function(){
+            var self = this;
+            self.errors([]);
+        }.bind(this);
+
         io.socket.on('connect', function(){
             io.socket.get('/equipment');
-            io.socket.get('/notifications/subscribe/statusUpdates');
+            io.socket.get('/notifications/subscribe/statusUpdates', {'connection': 'monitor'});
         });
 
         io.socket.on('equipment',function(obj){
@@ -1081,34 +1115,91 @@
             var previous = obj.previous;
             var data = obj.data;
             var eqIndex, eq;
-            console.log(obj);
+            //console.log(obj);
 
             if (self.showingEqs[obj.id] !== undefined){
                 eqIndex = self.showingEqs[obj.id];
                 eq = self.eqs()[eqIndex]();
                 _.forEach(data, function(value, param){
                     eq[param] = value;
-
                 });
+
                 self.eqs()[eqIndex](eq);
             }
 
           } else if (obj.verb == 'messaged') {
-            console.log(obj);
+            //console.log(obj);
+
+            // Get New event messages
+            if (obj.data.message == 'eventsUpdated'){
+                if (self.showingEqs[obj.id] !== undefined){
+                    // Query is very fast, but Indexing of events may take some time
+                    // So lets query in 5s delay
+                    setTimeout(function(){
+                        eqIndex = self.showingEqs[obj.id];
+                        eq = self.eqs()[eqIndex]();
+
+                        if (self.selectedEq() >= 0){
+                            var selectedEq = self.eqs()[self.selectedEq()]();
+
+                            if (selectedEq.id != obj.id){
+                                return false;
+                            }
+
+                            eventsQuery = {by: 'host', param: eq.address};
+                        } else {
+                            eventsQuery = {by: 'rack', param: self.racks()[self.selectedRack()].id};
+                        }
+
+                        eventsQuery.limit = 100;
+
+                        // Query only messages from last Max timestamp
+                        eventsQuery.from   = self.maxQueryDate();
+                        eventsQuery.to     = moment().format('YYYY-MM-DD HH:mm:ss');
+                        eventsQuery.levels = self.logLevels();
+
+                        io.socket.get('/equipment/events', eventsQuery, function(data, jwr){
+                            if (jwr.statusCode == 200){
+                                if (data.result !== null){
+                                    self.eventsParams({total: data.result.total});
+                                    if (Number(data.result.total) > 0){
+                                        _.forEach(data.result.hits, function(hit){
+                                            hit._source.comment   = ko.observableArray(hit._source.comment);
+                                            hit._source.confirmed = ko.observable(hit._source.confirmed);
+
+                                            // Add new events to top
+                                            self.events.unshift(hit);
+                                        });
+                                    }
+                                }
+
+                                self.maxQueryDate(moment().format('YYYY-MM-DD HH:mm:ss'));
+                            } else if (jwr.statusCode == 401){
+                                window.location.href = "/login";
+                            } else {
+                                self.errors.push('ERROR: ' + jwr.statusCode);
+                            }
+                        });
+
+                    }, 5000);
+                }
+            }
+
           } else {
             console.log(obj);
           }
         });
 
-        /*io.socket.on('statusUpdates',function(obj){
-          if (obj.message == 'eventsUpdated') {
-            console.log('Events updated');
-        } else if (obj.message == 'sensorsUpdated') {
-            console.log('Sensors updated');
-          } else {
+        io.socket.on('statusUpdates',function(obj){
+          if (obj.message == 'eventsUpdated' || obj.message == 'sensorsUpdated') {
+            //console.log('Query cycle finished');
+            self.racksStates();
+        } else {
             console.log('Unknown event: ' + obj.message);
-          }
-      });*/
+        }
+        });
+
+        self.loadData();
     };
 
     ko.applyBindings(new monitorEqViewModel(), document.getElementById("monitorPage"));
