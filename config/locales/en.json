@@ -169,5 +169,6 @@
 	"This will stop sending notifications through this alert": "This will stop sending notifications through this alert",
 	"Users to notify": "Users to notify",
 	"Users configuration for Alert": "Users configuration for Alert",
-	"Equipment configuration for Alert": "Equipment configuration for Alert"
+	"Equipment configuration for Alert": "Equipment configuration for Alert",
+	"No data yet. You can get it by pressing button below.": "No data yet. You can get it by pressing button below."
 }

@@ -57,7 +57,9 @@ module.exports = {
                             type: 'boolean',
                             defaultsTo: true
                          },
-    sensors_params: 'json',
+    sensors: {
+        model: 'sensors'
+    },
     sensors_state: 'json',
     sensors_proto:  'string',
     global_sensors_params: 'json',

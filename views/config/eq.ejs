@@ -570,7 +570,7 @@
 
             var eqQuery = {sort: {'rackmount': 1, 'pos_in_rack': 1}};
 
-            io.socket.get('/equipment', eqQuery, function(data, jwr){
+            io.socket.get('/equipment?populate=[rackmount]', eqQuery, function(data, jwr){
                 //console.log(data);
                 if (jwr.statusCode == 200){
                     var equipments = [];

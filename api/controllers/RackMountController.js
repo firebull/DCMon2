@@ -29,7 +29,6 @@ module.exports = {
 				var query = util.format("SELECT count(*) AS `num`, `event_status` AS `status`, `rackmount` AS `rack` \
 				                         FROM `equipment` \
 										 WHERE `monitoring_enable` = true \
-											AND `event_status` != 'ok' \
 											AND `rackmount` IN (%s) \
 										 GROUP BY `rackmount`, `status`", _.pluck(rackIds, 'id').join());
 
@@ -45,8 +44,14 @@ module.exports = {
 
 						_.forEach(data, function(item){
 							if (racks[item.rack] === undefined){
-								racks[item.rack] = item.status;
-							} else if (racks[item.rack] == 'warn' && item.status != 'warn'){
+								if (item.status == 'warn'){
+									racks[item.rack] = 'warn';
+								} else if(item.status != 'ok'){
+									racks[item.rack] = 'alert';
+								} else {
+									racks[item.rack] = item.status;
+								}
+							} else if (racks[item.rack] == 'warn' && item.status != 'warn' && item.status != 'ok'){
 								racks[item.rack] = 'alert';
 							}
 

@@ -66,7 +66,7 @@ module.exports = {
                 return callback(err, {});
             }
 
-            parser = eval(changeCase.pascal(equipment.vendor + 'ParseService'));
+            parser = eval('Ipmi' + changeCase.pascal(equipment.vendor + 'ParseService'));
 
             parser.sensors(data, function(err, parsed){
 
@@ -74,25 +74,25 @@ module.exports = {
                     return callback(err);
                 }
 
-                var currentStatus  = {};
                 var sensors_params = {};
 
                 // Let's combine sensor limits from DB and parsed
-                if (equipment.sensors_params !== null){
+                if (equipment.sensors !== undefined  && equipment.sensors.params !== undefined){
 
                     parsed.limits.forEach(function(item, i){
 
                         // Add sensor limits to DB if absent
-                        if (equipment.sensors_params[item.name] === undefined){
-                            equipment.sensors_params[item.name] = item;
-                            equipment.sensors_params[item.name].warnLimit = 7;
-                            equipment.sensors_params[item.name].alertLimit = 3;
-                            equipment.sensors_params[item.name].criticalSensor = false;
-                            equipment.sensors_params[item.name].ignoreSensor = false;
+                        if (equipment.sensors.params[item.name] === undefined){
+                            equipment.sensors.params[item.name] = item;
+                            equipment.sensors.params[item.name].warnLimit = 7;
+                            equipment.sensors.params[item.name].alertLimit = 3;
+                            equipment.sensors.params[item.name].criticalSensor = false;
+                            equipment.sensors.params[item.name].ignoreSensor = false;
+                            equipment.sensors.params[item.name].related = false;
                         }
                     });
 
-                    sensors_params = equipment.sensors_params;
+                    sensors_params = equipment.sensors.params;
 
                 } else if (parsed.limits.length > 0) {
                     sensors_params = {};
@@ -103,10 +103,9 @@ module.exports = {
                         sensors_params[item.name].alertLimit = 3;
                         sensors_params[item.name].criticalSensor = false;
                         sensors_params[item.name].ignoreSensor = false;
-
+                        sensors_params[item.name].related = false;
                     });
 
-                    currentStatus.sensors_params = sensors_params;
                 }
 
                 return callback(null, {'sensors': parsed.sensors, 'limits': sensors_params});
@@ -137,7 +136,7 @@ module.exports = {
                 return callback(err, {});
             }
 
-            parser = eval(changeCase.pascal(equipment.vendor + 'ParseService'));
+            parser = eval('Ipmi' + changeCase.pascal(equipment.vendor + 'ParseService'));
 
             parser.globalSensors(data, function(err, parsed){
                 if (err){
@@ -172,7 +171,7 @@ module.exports = {
                 return callback(err, {});
             }
 
-            parser = eval(changeCase.pascal(equipment.vendor + 'ParseService'));
+            parser = eval('Ipmi' + changeCase.pascal(equipment.vendor + 'ParseService'));
 
             parser.events(data, function(err, parsed){
                 callback(null, parsed);

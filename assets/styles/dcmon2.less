@@ -1,3 +1,7 @@
+body {
+    background-color: #fff !important;
+}
+
 .fixed.launch.button {
   position: fixed;
   top: 63px;
@@ -85,3 +89,31 @@ canvas.tranglify {
   z-index: -1;
 }
 
+@selection-border-right: 2px solid;
+@red: #d95c5c;
+@green: #5bbd72;
+@orange: #e07b53;
+@blue: #3b83c0;
+
+.ui.selection.list .list>.item.active,
+.ui.selection.list .list>.item:active,
+.ui.selection.list>.item.active,
+.ui.selection.list>.item:active {
+    border-right: @selection-border-right;
+
+    &.red {
+        border-right: @selection-border-right @red;
+    }
+
+    &.green {
+        border-right: @selection-border-right @green;
+    }
+
+    &.orange {
+        border-right: @selection-border-right @orange;
+    }
+
+    &.blue {
+        border-right: @selection-border-right @blue;
+    }
+}

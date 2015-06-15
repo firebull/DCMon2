@@ -8,7 +8,8 @@ module.exports.dcmon = {
 
     // List of avaliable vendors
     vendors: [{name: 'hp', longname: 'HP'},
-              {name: 'supermicro', longname: 'SuperMicro'}],
+              {name: 'supermicro', longname: 'SuperMicro'},
+              {name: 'common', longname: 'Common (SNMP Only)'}],
 
     // InfluxDB params
     influx: { host : 'localhost',

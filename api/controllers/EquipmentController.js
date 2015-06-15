@@ -38,7 +38,7 @@ module.exports = {
 						_.forEach(eqs, function(eq){
 							currRack = eq.rackmount;
 							delete(eq.rackmount);
-							
+
 							rack.eqs.push(eq);
 
 							if (currRack.id != lastRack){
@@ -62,7 +62,7 @@ module.exports = {
 
         var influxClient = sails.influxClient;
 
-        Equipment.findOne({'id': req.params.id}).exec(function(err, eq){
+        Equipment.findOne({'id': req.params.id}).populate('sensors').exec(function(err, eq){
             if (err){
                 sails.logger.error('Could not get equipment ID %s: %s', req.params.id, err);
                 return res.json();
@@ -91,18 +91,61 @@ module.exports = {
                 // Count distinct period
                 var minutesDiff  = moment(to, 'X').diff(moment(from, 'X'), 'minutes');
                 var distinctTime = parseInt(minutesDiff/100);
+				var query = '';
 
-                var query = util.format("SELECT DISTINCT(value) AS value FROM /^ip%s\./i WHERE time > %ss group by time(%sm) ORDER ASC", ip(eq.address), from, distinctTime);
-                influxClient.query(query, function(err, data){
-					if (err){
-						return res.serverError();
-					} else {
-						_.forEach(data, function(item){
-							item.name = XRegExp.split(item.name, /\./g)[1];
-						});
-						return res.ok(data);
-					}
-                });
+				if (eq.sensors === undefined || eq.sensors === 0){
+                	query = util.format("SELECT DISTINCT(value) AS value FROM /^ip%s\./i WHERE time > %ss group by time(%sm) ORDER ASC", ip(eq.address), from, distinctTime);
+				} else {
+					_.forEach(eq.sensors.params, function(param){
+						if (param.related === false){
+							query = query + util.format("SELECT DISTINCT(value) AS value FROM ip%s.%s WHERE time > %ss group by time(%sm) ORDER ASC; ", ip(eq.address), param.name, from, distinctTime);
+						} else if (param.related != 'secondary') {
+							paramRelated = eq.sensors.params[param.related];
+							query = query + _.template("SELECT DISTINCT(${ sen_1 }.value) AS ${ sen_1 }, \
+							                                    DISTINCT(${ sen_2 }.value) AS ${ sen_2 } \
+														FROM ip${ ip }.${ param_main } AS ${ sen_1 } \
+														INNER JOIN ip${ ip }.${ param_related } AS ${ sen_2 } \
+														WHERE time > ${ time }s \
+														GROUP BY time(${distinctTime}m) \
+														ORDER ASC; ",
+														{ sen_1: param.ylabel,
+														  sen_2: paramRelated.ylabel,
+														  ip: ip(eq.address),
+														  param_main: param.name,
+														  param_related: param.related,
+														  time: from,
+														  distinctTime: distinctTime
+														});
+						}
+					});
+				}
+
+				if (query != ''){
+	                influxClient.query(query, function(err, data){
+						if (err){
+							sails.logger.error(err);
+							return res.serverError();
+						} else {
+							// Need to parse InfluxDB sensor names like:
+							// ip3232235531.AtGs95048CpuEthernetNetworkInterface.In as networkIn inner join ip3232235531.AtGs95048CpuEthernetNetworkInterface.Out as networkOut
+							var pattern = XRegExp.cache('^ip\\d+\\.([a-zA-Z0-9\\.]+)', 'gi');
+
+							_.forEach(data, function(item){
+								parsed = XRegExp.exec(item.name, pattern);
+								if (parsed){
+									item.name = parsed[1];
+								} else {
+									item.name = XRegExp.split(item.name, /ip\d*\./g)[1];
+								}
+
+							});
+							//console.log(data[0].points);
+							return res.ok(data);
+						}
+	                });
+				} else {
+					return res.ok();
+				}
             }
         });
     },
@@ -132,7 +175,7 @@ module.exports = {
 					} else {
 						_.forEach(data, function(item){
 
-							storeName = XRegExp.split(item.name, /\./g)[1];
+							storeName = XRegExp.split(item.name, /ip\d*\./g)[1];
 							lastData[storeName] = item.points[0][2];
 						});
 

@@ -3,6 +3,7 @@ module.exports = {
         Equipment
          .find({'monitoring_enable': true})
          .populate('rackmount')
+         .populate('sensors')
          .exec(function(err, eqs){
             if (err){
                 sails.logger.error('Could not get equipment list from DB: %s', err);
@@ -34,6 +35,8 @@ module.exports = {
                                             });
                                         }
                                     });
+                                } else {
+                                    asyncCallback(null);
                                 }
                             },
                             // Query sensors
@@ -55,6 +58,25 @@ module.exports = {
                                             });
                                         }
                                     });
+                                } else if (item.sensors_proto == 'snmp'){
+                                    sails.logger.info('Query sensors of %s (%s) trough SNMP', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                    SnmpService.querySensors(item, function(err, data){
+                                        if (err){
+                                            sails.logger.error('Could not query sensors through SNMP: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                            asyncCallback(null); // Non critical error, lets continue
+                                        } else {
+                                            //Save sensors to DB and alert if needed
+                                            SaveService.saveSensors(item, data, function(err){
+                                                if (err){
+                                                    asyncCallback(err);
+                                                } else {
+                                                    asyncCallback(null);
+                                                }
+                                            });
+                                        }
+                                    })
+                                } else {
+                                    asyncCallback(null);
                                 }
                             },
                             // Query global sensors
@@ -76,6 +98,8 @@ module.exports = {
                                             });
                                         }
                                     });
+                                } else {
+                                    asyncCallback(null);
                                 }
                             },
                             // Query information
@@ -101,6 +125,30 @@ module.exports = {
                                             });
                                         }
                                     });
+                                } if (item.configuration_proto == 'snmp'){
+                                    if (item.query_configuration === false){
+                                        return asyncCallback(null);
+                                    }
+
+                                    sails.logger.info('Query equipment information of %s (%s) trough SNMP', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                    SnmpService.queryFullInfo(item, function(err, data){
+                                        console.log(err);
+                                        if (err){
+                                            sails.logger.error('Could not query equipment information SNMP: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                            asyncCallback(null); // Non critical error, lets continue
+                                        } else {
+                                            //Save information to DB and alert if needed
+                                            SaveService.saveInfo(item, data, function(err){
+                                                if (err){
+                                                    asyncCallback(err);
+                                                } else {
+                                                    asyncCallback(null);
+                                                }
+                                            });
+                                        }
+                                    });
+                                } else {
+                                    asyncCallback(null);
                                 }
                             }
                         ],

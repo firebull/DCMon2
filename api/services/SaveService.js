@@ -4,6 +4,11 @@ var format = require("string-template");
 module.exports = {
 
     saveSensors: function(equipment, data, cb){
+
+        if (data === undefined || data.length === 0){
+            return cb(null);
+        }
+
         var influx = require('influx');
         var ip     = require('ip').toLong;
 
@@ -90,9 +95,37 @@ module.exports = {
                 currentState.sensor_status = 'ok';
             }
 
-            currentState.sensors_params = data.limits;
-
             async.parallel([
+                            function(callback){
+                                //ASYNC: Save equipment sensor_params to DB
+                                Sensors.findOrCreate({equipment: equipment.id}, {equipment: equipment.id, params: {}}).exec(function(err, record){
+                                    if (err){
+                                        sails.dcmonLogger.emerg('Could not find or create sensors params record in DB: %s', err,
+                                                                {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                        callback(err);
+                                    } else {
+                                        if (data.limits){
+                                            Sensors.update({'id': record.id}, {params: data.limits}, function(err, result){
+                                                if (err){
+                                                    sails.dcmonLogger.emerg('Could not update sensors params record in DB: %s', err,
+                                                                            {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                                    callback(err);
+                                                } else {
+                                                    Equipment.update({id: equipment.id}, {sensors: record.id}).exec(function(err){
+                                                        if (err){
+                                                            sails.dcmonLogger.emerg('Could not update equipment data in DB: %s', err,
+                                                                                    {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                                        }
+                                                    });
+                                                    callback(null);
+                                                }
+                                            });
+                                        } else {
+                                            callback(null);
+                                        }
+                                    }
+                                });
+                            },
                             function(callback){
                                 //ASYNC: Save equipment sensor_status to DB
                                 Equipment.update({'id': equipment.id}, currentState, function(err, result){

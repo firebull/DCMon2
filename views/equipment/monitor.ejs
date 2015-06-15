@@ -42,40 +42,43 @@
                 <div class="ui segment" data-bind="visible: racks().length == 0">
                     <%= __('No Rackmounts') %>
                 </div>
+                <div class="ui segment">
                 <div class="ui small divided selection list" data-bind="foreach: {data: racks, as: 'rack'}">
-                    <div class="item" data-bind="event: {click: $root.selectRack.bind($data)}, css: {'active': Number($root.selectedRack()) == $index()}">
+                    <div class="item" data-bind="event: {click: $root.selectRack.bind($data)},
+                                                 css: {'active blue': Number($root.selectedRack()) == $index()}">
                         <div class="content">
                             <div class="header">
-                                <i class="icon" data-bind="css: {'green circle': rack.state() == 'ok',
-                                                                 'orange warning circle': rack.state() == 'warn',
+                                <i class="icon" data-bind="css: {'circle green': rack.state() == 'ok',
+                                                                 'orange warning sign': rack.state() == 'warn',
                                                                  'red warning sign': rack.state() == 'alert',
-                                                                 'circle': !rack.state()
+                                                                 'radio': !rack.state()
 
                                 }"></i>
                                 <span data-bind="text: rack.name"></span>
                             </div>
-                            <i data-bind="visible: Number($root.selectedRack()) == $index()" class="arrow right floated medium icon"></i>
                             <div class="description" data-bind="text: rack.description"></div>
                         </div>
                     </div>
                 </div>
             </div>
+            </div>
             <div class="three wide column">
                 <div class="ui segment" data-bind="visible: eqs().length == 0">
                     <%= __('No Equipment') %>
                 </div>
-                <div class="ui small divided selection list" data-bind="foreach: {data: eqs, as: 'eq', afterAdd: toEqList}">
-                    <div class="item" data-bind="event: {click: $root.selectEq.bind($data, $index())}, css: {'active': Number($root.selectedEq()) == $index()}">
-                        <div class="content">
-                            <div class="header">
-                                <i class="icon power" data-bind="css: {'green': eq.power_state == 'on', 'thin': eq.power_state == 'off'}, attr: {'title': $root.powerStatesByType[eq.power_state]}"></i>
-                                <span data-bind="text: eq.name"></span>
+                <div class="ui segment">
+                    <div class="ui small divided selection list" data-bind="foreach: {data: eqs, as: 'eq', afterAdd: toEqList}">
+                        <div class="item" data-bind="event: {click: $root.selectEq.bind($data, $index())}, css: {'active blue': Number($root.selectedEq()) == $index()}">
+                            <div class="content">
+                                <div class="header">
+                                    <i class="icon power" data-bind="css: {'green': eq.power_state == 'on', 'thin': eq.power_state == 'off'}, attr: {'title': $root.powerStatesByType[eq.power_state]}"></i>
+                                    <span data-bind="text: eq.name"></span>
+                                </div>
+                                <div class="description" data-bind="text: eq.address"></div>
+                                <i class="circular small inverted icon" data-bind="css: $root.monitoringIcon(eq.monitoring_enable)"></i>
+                                <i class="circular small inverted dashboard icon" data-bind="css: $root.eqStatusColor($data, 'sensor_status')"></i>
+                                <i class="circular small green inverted envelope icon" data-bind="css: $root.eqStatusColor($data, 'event_status')"></i>
                             </div>
-                            <i data-bind="visible: Number($root.selectedEq()) == $index()" class="arrow right floated medium icon"></i>
-                            <div class="description" data-bind="text: eq.address"></div>
-                            <i class="circular small inverted icon" data-bind="css: $root.monitoringIcon(eq.monitoring_enable)"></i>
-                            <i class="circular small inverted dashboard icon" data-bind="css: $root.eqStatusColor($data, 'sensor_status')"></i>
-                            <i class="circular small green inverted envelope icon" data-bind="css: $root.eqStatusColor($data, 'event_status')"></i>
                         </div>
                     </div>
                 </div>
@@ -104,7 +107,7 @@
             <div class="ui button"><%= __('Close') %></div>
         </div>
     </div>
-    <div class="ui large modal" id="sensorsLimitsModal">
+    <div class="ui fullscreen modal" id="sensorsLimitsModal">
         <i class="close icon"></i>
         <div class="header"></div>
         <div class="content" data-bind="if: sensorsModalData">
@@ -118,7 +121,7 @@
     <div class="ui modal" id="eqInfoModal">
         <i class="close icon"></i>
         <div class="header"></div>
-        <div class="content" data-bind="if: eqInfoModalData().length > 0">
+        <div class="content" data-bind="if: $root.selectedEq() >= 0">
             <div class="description" data-bind="template: {data: eqInfoModalData,
                                                            name: 'eq-info',
                                                            as: 'infos'}">
@@ -183,7 +186,11 @@
             </thead>
             <tbody data-bind="foreach: {data: $root.sensorsModalData, as: 'sensor'}">
                 <tr data-bind="css: $root.sensorStatusType(sensor.name)">
-                    <td data-bind="text: sensor.origName"></td>
+                    <td>
+                        <div class="field">
+                            <input type="text" data-bind="attr: {name: sensor.name + 'OrigName'}, value: sensor.origName"/>
+                        </div>
+                    </td>
                     <td data-bind="text: $root.lastSensorsData[sensor.name]"></td>
                     <td>
                         <div class="field">
@@ -228,6 +235,7 @@
                <span data-bind="text: rack.description"></span>
             </div>
         </div>
+        <div class="ui inline loader" data-bind="css: {'active': $root.loading}"></div>
     </div>
     <!-- ko template: 'filter-template' --><!-- /ko -->
     <div data-bind="template: {name: 'events-item-template'}"></div>
@@ -243,6 +251,7 @@
                <span data-bind="text: eq.address"></span>
             </div>
         </div>
+        <div class="ui inline loader" data-bind="css: {'active': $root.loading}"></div>
     </div>
     <div class="ui menu">
         <a class="item" title="<%= __('Reset state') %>" data-bind="event: {click: $root.resetState.bind(false)}">
@@ -415,6 +424,9 @@
     <div class="ui info message" data-bind="visible: $root.eqs()[$root.selectedEq()]().query_configuration">
         <%= __('Waiting for refreshed data. It will be done during query cycle. Please, wait.') %>
     </div>
+    <div class="ui info message" data-bind="visible: infos.length == 0">
+        <%= __('No data yet. You can get it by pressing button below.') %>
+    </div>
     <div class="ui feed" data-bind="foreach: { data: infos, as: 'info' }">
         <div class="event">
             <div class="content">
@@ -435,7 +447,6 @@
     var monitorEqViewModel = function(){
         var self = this;
 
-        this.connected      = ko.observable(false);
         this.confirmActions = ko.observable(true);
         this.errors         = ko.observableArray();
         this.infos          = ko.observableArray();
@@ -479,6 +490,11 @@
 
         this.plot = [];
 
+        /**
+         * DataCenter select actions
+         * Creates observableArray of Rackmounts of selected DC
+         * @dc  {Object} dc selected object
+         */
         this.selectDc = function(dc){
             var self = this;
 
@@ -504,9 +520,15 @@
 
         }.bind(this);
 
+        /**
+         * Rackmount select actions
+         * Creates observableArray of Equipment of selected RackMount
+         * @rack  {Object} rack selected object
+         */
         this.selectRack = function(rack){
             var self = this;
 
+            self.loading(true);
             self.selectedEq(-1);
             self.detailsTab('events');
             self.eqs.removeAll();
@@ -528,6 +550,7 @@
                     }
 
                     self.eqs(eqs);
+                    self.loading(false);
 
                     self.loadEvents();
                 } else if (jwr.statusCode == 401){
@@ -542,15 +565,43 @@
         this.selectEq = function(index, eq){
             var self = this;
 
+            self.loading(true);
             self.selectedEq(index);
 
-            if (self.detailsTab() == 'sensors'){
-                self.eqGraphs([]);
-                self.loadGraphs(eq.id);
-            } else if (self.detailsTab() == 'events'){
-                self.events([]);
-                self.loadEvents();
-            }
+            async.series([
+                function(callback){
+                    var eq = self.eqs()[self.selectedEq()]();
+                    if (eq.sensors === undefined || eq.sensors >= 0){
+                        io.socket.get('/equipment/' + eq.id + '/sensors', function(data, jwr){
+
+                            if (jwr.statusCode == 200){
+                                eq.sensors = data;
+                                return callback(null);
+                            } else if (jwr.statusCode == 401){
+                                window.location.href = "/login";
+                            } else {
+                                return callback(jwr.statusCode);
+                            }
+                        });
+                    } else {
+                        return callback(null);
+                    }
+                }
+            ], function(err){
+                if (err){
+                    self.errors.push('ERROR: ' + err);
+                } else {
+                    self.loading(false);
+
+                    if (self.detailsTab() == 'sensors'){
+                        self.eqGraphs([]);
+                        self.loadGraphs(eq.id);
+                    } else if (self.detailsTab() == 'events'){
+                        self.events([]);
+                        self.loadEvents();
+                    }
+                }
+            });
 
             $('#minTime').datetimepicker({
                 format: 'Y-m-d H:i',
@@ -588,6 +639,7 @@
         this.loadGraphs = function(){
             var self = this;
 
+            self.loading(true);
             self.eqGraphs([]);
             self.sensorsParams(false);
 
@@ -597,8 +649,9 @@
             io.socket.get('/equipment/graphs/' + eq.id, graphQuery, function(data, jwr){
 
                 if (jwr.statusCode == 200){
-                    self.sensorsParams(eq.sensors_params);
+                    self.sensorsParams(eq.sensors.params);
                     self.eqGraphs(data);
+                    self.loading(false);
                 } else if (jwr.statusCode == 401){
                     window.location.href = "/login";
                 } else {
@@ -618,15 +671,25 @@
                 } else if (point[1] < sensor.min) {
                     sensor.min = point[1];
                 }
-                return result.push([ new Date(point[0]*1000), point[1]]);
+
+                point[0] = new Date(point[0]*1000);
+                return result.push(point);
             });
 
-            smoothPlotter.smoothing = 0.8;
+            //smoothPlotter.smoothing = 0.8;
+            var labels = _.clone(item.columns).splice(1);
+
+            if (labels.length <= 1){
+                labels = [ "<%= __('Date/Time') %>", sensor.units ];
+            } else {
+                labels = ["<%= __('Date/Time') %>"].concat(labels);
+            }
+
 
             new Dygraph(element[3],
               points,
               {
-                labels: [ "<%= __('Date/Time') %>", sensor.units ],
+                labels: labels,
                 ylabel: sensor.units,
                 height: 200,
                 axes: {
@@ -650,7 +713,7 @@
         this.loadEvents = function(){
             var self = this;
             var eq, eventsQuery;
-
+            self.loading(true);
             self.events.removeAll(); // Clear current
 
             if (self.selectedEq() >= 0){
@@ -685,6 +748,8 @@
                 } else {
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }
+
+                self.loading(false)
             });
 
         }.bind(this);
@@ -830,7 +895,7 @@
 
                         $('#sensorsLimitsModal .header').html(title);
 
-                        self.sensorsModalData(_.values(eq.sensors_params));
+                        self.sensorsModalData(_.values(eq.sensors.params));
 
                         $('#sensorsLimitsModal').modal({onHide: function(){
                                                     self.sensorsModalData([]);
@@ -866,7 +931,7 @@
             });
 
             // Saving data
-            io.socket.put('/equipment/' + eq.id, {sensors_params: saveData}, function(answer, jwr){
+            io.socket.put('/sensors/' + eq.sensors.id, {params: saveData}, function(answer, jwr){
                     if (jwr.statusCode == 200){
                         $('#sensorsLimitsModal').modal('hide');
                     } else if (jwr.status == 400 && answer.error){
@@ -874,7 +939,7 @@
                     } else if (jwr.statusCode == 401){
                         window.location.href = "/login";
                     } else {
-                        self.errors.push('ERROR: ' + jwr.statusCode);
+                        self.modalErrors.push('ERROR: ' + jwr.statusCode);
                     }
             });
 
@@ -1079,6 +1144,7 @@
             if (self.selectedDc()){
                 io.socket.get('/rackmount/states/' + self.selectedDc(), function(data, jwr){
                     if (jwr.statusCode == 200){
+
                         _.forEach(self.racks(), function(rack){
                             if (data[rack.id] !== undefined){
                                 rack.state(data[rack.id]);
@@ -1115,7 +1181,6 @@
             var previous = obj.previous;
             var data = obj.data;
             var eqIndex, eq;
-            //console.log(obj);
 
             if (self.showingEqs[obj.id] !== undefined){
                 eqIndex = self.showingEqs[obj.id];
@@ -1128,7 +1193,6 @@
             }
 
           } else if (obj.verb == 'messaged') {
-            //console.log(obj);
 
             // Get New event messages
             if (obj.data.message == 'eventsUpdated'){

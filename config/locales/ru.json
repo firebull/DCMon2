@@ -58,7 +58,7 @@
 	"RackMount name": "Имя стойки",
 	"RackMount description": "Описание Стойки",
 	"Equipment name": "Имя Оборудования",
-	"Equipment description": "Опиание Оборудования",
+	"Equipment description": "Описание Оборудования",
 	"Equipment Type": "Тип оборудования",
 	"Equipment Vendor": "Производитель Оборудования",
 	"IPMI/iLo/SNMP Address": "Адрес IPMI/iLo/SNMP",
@@ -155,5 +155,6 @@
 	"This will stop sending notifications through this alert": "Это отключит отправику уведомлений согласно этому правилу",
 	"Users to notify": "Кого уведомлять",
 	"Users configuration for Alert": "Настройка пользователей данного правила",
-	"Equipment configuration for Alert": "Настройка оборудования данного правила"
+	"Equipment configuration for Alert": "Настройка оборудования данного правила",
+	"Error.Passport.Password.NotSet": "Error.Passport.Password.NotSet"
 }
