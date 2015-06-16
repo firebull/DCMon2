@@ -411,10 +411,10 @@
     <table class="ui very basic table" data-bind="if: $root.globalSensors().length > 0">
         <tbody data-bind="foreach: $root.globalSensors">
             <tr data-bind="css: {positive: status == 'ok', negative: status == 'alert'}">
-                <td data-bind="text: name"></td>
+                <td data-bind="text: origName"></td>
                 <td data-bind="text: current"></td>
                 <td>
-                    <i class="inverted circular icon" data-bind="css: {'green check': status == 'ok', 'red warning sign': status == 'alert'}"></i>
+                    <i class="inverted circular icon" data-bind="css: $root.globalSensorIcon($data)"></i>
                 </td>
             </tr>
         </tbody>
@@ -568,9 +568,10 @@
             self.loading(true);
             self.selectedEq(index);
 
+            var eq = self.eqs()[self.selectedEq()]();
+
             async.series([
                 function(callback){
-                    var eq = self.eqs()[self.selectedEq()]();
                     if (eq.sensors === undefined || eq.sensors >= 0){
                         io.socket.get('/equipment/' + eq.id + '/sensors', function(data, jwr){
 
@@ -599,6 +600,9 @@
                     } else if (self.detailsTab() == 'events'){
                         self.events([]);
                         self.loadEvents();
+                    } else if (self.detailsTab() == 'health'){
+                        self.globalSensors([]);
+                        self.globalSensors(_.values(eq.sensors.alarm_sensors));
                     }
                 }
             });
@@ -631,9 +635,27 @@
         }.bind(this);
 
         this.showGlobalSensors = function(){
+            var self = this;
             var eq = self.eqs()[self.selectedEq()]();
-            this.globalSensors(_.values(eq.global_sensors));
+            this.globalSensors(_.values(eq.sensors.alarm_sensors));
             this.detailsTab('health');
+        }.bind(this);
+
+        this.globalSensorIcon = function(sensor){
+            var self = this;
+            var eq = self.eqs()[self.selectedEq()]();
+            var sensorsParams = eq.sensors.alarm_sensors_params;
+
+            if (sensorsParams !== undefined
+                    && (sensorsParams[sensor.name] === false || sensorsParams[sensor.name] === undefined)
+                    && sensor.status == 'ok'){
+                return 'green check';
+            } else if (sensorsParams !== undefined && sensorsParams[sensor.name] === true) {
+                return 'grey ban';
+            } else if (sensor.status == 'alert'){
+                return 'red warning sign';
+            }
+
         }.bind(this);
 
         this.loadGraphs = function(){

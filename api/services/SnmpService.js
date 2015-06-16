@@ -288,9 +288,86 @@ module.exports = {
 
     },
 
-    queryGlobalSensors: function(equipment, callback){
+    /**
+     * Query alert sensors
+     * For network devices by RFC I will get inetrfaces states
+     * @param  {Object}   equipment data from DB
+     * @param  {Function} callback
+     * @return {Object}   to store data in Sensors Table
+     */
+    queryAlertSensors: function(equipment, callback){
+        var host = {  host: equipment.address,
+                      port: 161,
+                      community: equipment.snmp_trap,
+                      timeouts: [5000, 10000]};
 
-        return callback(null);
+        var oids, limits;
+        var timestamp = moment().unix();
+
+        async.parallel({
+            // Get interfaces names
+            names: function(cb){
+                oids = '.1.3.6.1.2.1.2.2.1.2';
+                snmpTree(host, oids, function(err, result){
+                    var names = {};
+                    var ifName, index;
+
+                    if (err){
+                        return cb(err);
+                    } else {
+                        if (result && result.length > 0){
+                            result.forEach(function (vb) {
+                                index = _.last(vb.oid);
+                                names[index] = { origName: util.format('%s %s Operational Status', ('00' + index).slice(-2), vb.value) };
+                            });
+                            return cb(null, names);
+                        } else {
+                            return cb('nodata');
+                        }
+                    }
+                });
+            },
+            // Get current Interfaces states and check them
+            intStates: function(cb){
+                oids = '.1.3.6.1.2.1.2.2.1.8';
+                snmpTree(host, oids, function(err, result){
+                    var states = {1: 'up', 2: 'down', 3: 'testing', 4: 'unknown', 5: 'dormant', 6: 'notPresent', 7: 'lowerLayerDown'};
+                    var ints = {};
+                    var index;
+
+                    if (err){
+                        return cb(err);
+                    } else {
+                        if (result && result.length > 0){
+                            result.forEach(function (vb) {
+                                index = _.last(vb.oid);
+                                ints[index] = {current: states[vb.value], timestamp: timestamp};
+                            });
+                            return cb(null, ints);
+                        } else {
+                            return cb('nodata');
+                        }
+                    }
+                });
+            }
+        }, function(err, results){
+            if (err){
+                return callback(err);
+            } else {
+                var interfacesById = _.merge(results.names, results.intStates);
+                var interfacesByName = {};
+                var name;
+
+                _.forEach(interfacesById, function(item){
+                    name = changeCase.pascalCase(item.origName);
+                    item.name = name;
+                    item.type = 'ethernet';
+                    interfacesByName[name] = item;
+                });
+
+                return callback(null, interfacesByName);
+            }
+        });
     },
 
     queryEvents: function(equipment, callback){
@@ -342,8 +419,6 @@ module.exports = {
                 });
             }
         }, function(err, data){
-            console.log(data);
-
             if (err){
                 return callback(err);
             } else {

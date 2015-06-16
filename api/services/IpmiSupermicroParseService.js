@@ -137,7 +137,9 @@ module.exports = {
                 }
 
                 result[name] = {
-                    name: sensorName,
+                    name: name,
+                    type: 'health',
+                    origName: sensorName,
                     current: value,
                     timestamp: timestamp
                 };

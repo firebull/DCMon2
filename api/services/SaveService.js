@@ -195,47 +195,101 @@ module.exports = {
             CoolingFanFault   : false,
         };
 
-        var sensorsParams = equipment.global_sensors_params;
-        var saveData = {global_sensors: {}};
+        var sensorsParams = equipment.sensors.alarm_sensors_params;
+        var saveData = {alarm_sensors: {}};
+        var pastState;
 
         // First check if sensors params are exists
         // If not, create object {sensorName: false}
-        // False means that sensor is not excluded from check
-        if(sensorsParams === null){
+        // False means that sensor is NOT excluded from check
+        if(sensorsParams === null || sensorsParams === undefined || _.isEmpty(sensorsParams)){
             sensorsParams = {};
-            _.forEach(data, function(item, sensorName){
-                sensorsParams[sensorName] = false;
-            });
 
-            saveData.global_sensors_params = sensorsParams;
+            // For SNMP requests exclude sensors by default from check
+            if (equipment.sensors_proto == 'snmp'){
+                _.forEach(data, function(item, sensorName){
+                    sensorsParams[sensorName] = true;
+                });
+            } else {
+                _.forEach(data, function(item, sensorName){
+                    sensorsParams[sensorName] = false;
+                });
+            }
+
+            saveData.alarm_sensors_params = sensorsParams;
         }
 
         _.forEach(data, function(item, sensorName){
             // Check if sensor excluded from check
             if (sensorsParams[sensorName] === false || sensorsParams[sensorName] === undefined){
                 // Check if sensor validates normal state
-                if (normalStates[sensorName] === undefined || item.current === normalStates[sensorName]){
-                    item.status = 'ok';
-                } else {
-                    sails.dcmonLogger.alert("Sensor '%s' is at fail state! Current: %s. Normal state is: %s.",
-                                            sensorName, item.current, normalStates[sensorName],
-                                            {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
-                    item.status = 'alert';
+
+                if (item.type == 'health'){
+                    if (normalStates[sensorName] === undefined || item.current === normalStates[sensorName]){
+                        item.status = 'ok';
+                    } else {
+                        sails.dcmonLogger.alert("Sensor '%s' is at fail state! Current: %s. Normal state is: %s.",
+                                                sensorName, item.current, normalStates[sensorName],
+                                                {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                        item.status = 'alert';
+                    }
+                } else if (item.type == 'ethernet'){
+
+                    if (equipment.sensors.alarm_sensors !== undefined){
+                        pastState = equipment.sensors.alarm_sensors[item.name];
+                    }
+
+                    // Initial state for first measurment
+                    if (!pastState || pastState.current == item.current){
+                        item.status = 'ok';
+                    } else
+                    // Warning event if interface is Up, but last state was not Up
+                    if (item.current == 'up' && pastState.current != 'up'){
+
+                        item.status = 'ok';
+
+                        sails.dcmonLogger.warn("Interface '%s' is now Up, but at last check it was '%s'",
+                                                item.origName, pastState.current,
+                                                {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                    } else
+                    // Alert message if state changes
+                    if (pastState.current != item.current) {
+                        item.status = 'alert';
+
+                        sails.dcmonLogger.alert("Interface '%s' is now '%s', but at last check it was '%s'",
+                                                item.origName, item.current, pastState.current,
+                                                {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+
+                    }
                 }
             }
 
-            saveData.global_sensors[sensorName] = item;
+            saveData.alarm_sensors[sensorName] = item;
         });
 
-        Equipment.update({id: equipment.id}, saveData).exec(function(err, result){
+        Sensors.findOrCreate({equipment: equipment.id}, {equipment: equipment.id, alarm_sensors_params: {}, alarm_sensors: {}}).exec(function(err, record){
             if (err){
-                sails.dcmonLogger.emerg('Could not save global sensors data in DB: %s', err,
+                sails.dcmonLogger.emerg('Could not find or create sensors params record in DB: %s', err,
                                         {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
                 return cb(err);
             } else {
-                saveData.updatedAt = result[0].updatedAt;
-                Equipment.publishUpdate(equipment.id, saveData);
-                return cb(null);
+                Sensors.update({'id': record.id}, saveData).exec(function(err, result){
+                    if (err){
+                        sails.dcmonLogger.emerg('Could not save global sensors data in DB: %s', err,
+                                                {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                        return cb(err);
+                    } else {
+                        Equipment.update({id: equipment.id}, {sensors: record.id}).exec(function(err){
+                            if (err){
+                                sails.dcmonLogger.emerg('Could not update equipment data in DB: %s', err,
+                                                        {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                            }
+                        });
+                        saveData.updatedAt = result[0].updatedAt;
+                        Equipment.publishUpdate(equipment.id, saveData);
+                        return cb(null);
+                    }
+                });
             }
         });
     },

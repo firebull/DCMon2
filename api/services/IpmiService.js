@@ -115,7 +115,7 @@ module.exports = {
 
     },
 
-    queryGlobalSensors: function(equipment, callback){
+    queryAlertSensors: function(equipment, callback){
 
         var query = {'address':  equipment.address,
                      'login':    equipment.login,

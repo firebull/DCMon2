@@ -17,6 +17,8 @@ module.exports = {
       equipment: {
           model: 'equipment'
       },
-      params: 'json'
+      params: 'json',
+      alarm_sensors: 'json',
+      alarm_sensors_params: 'json'
     }
 };
