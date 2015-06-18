@@ -171,5 +171,8 @@
 	"Equipment configuration for Alert": "Equipment configuration for Alert",
 	"No data yet. You can get it by pressing button below.": "No data yet. You can get it by pressing button below.",
 	"Alarm Sensors configuration": "Alarm Sensors configuration",
-	"Alarm sensors": "Alarm sensors"
+	"Alarm sensors": "Alarm sensors",
+	"No sensors graphs found": "No sensors graphs found",
+	"No Alarm sensors found": "No Alarm sensors found",
+	"No alarm sensors found": "No alarm sensors found"
 }

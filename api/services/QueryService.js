@@ -97,7 +97,7 @@ module.exports = {
                                     asyncCallback(null);
                                 }
                             },
-                            // Query Alert sensors
+                            // Query Alarm sensors
                             function(asyncCallback){
                                 if (item.sensors_proto == 'ipmi' || item.sensors_proto == 'ipmiv2'){
                                     sails.logger.info('Query alarm sensors of %s (%s) trough IPMI', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
@@ -107,7 +107,7 @@ module.exports = {
                                             asyncCallback(null); // Non critical error, lets continue
                                         } else {
                                             //Save alarm sensors to DB and alert if needed
-                                            SaveService.saveGlobalSensors(item, data, function(err){
+                                            SaveService.saveAlarmSensors(item, data, function(err){
                                                 if (err){
                                                     asyncCallback(err);
                                                 } else {
@@ -124,7 +124,7 @@ module.exports = {
                                             asyncCallback(null); // Non critical error, lets continue
                                         } else {
                                             //Save alarm sensors to DB and alert if needed
-                                            SaveService.saveGlobalSensors(item, data, function(err){
+                                            SaveService.saveAlarmSensors(item, data, function(err){
                                                 if (err){
                                                     asyncCallback(err);
                                                 } else {

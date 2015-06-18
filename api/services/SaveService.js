@@ -175,14 +175,14 @@ module.exports = {
     },
 
     /**
-     * Save JSON data of current Global sensors state
+     * Save JSON data of current Alarm sensors state
      * Also parse data for alerts
      * @param  {Object}   equipment [current equipment data from DB]
      * @param  {Object}   data      [parsed data with sensors]
      * @param  {Function} cb        [callback function]
      * @return {string}             [error]
      */
-    saveGlobalSensors: function(equipment, data, cb){
+    saveAlarmSensors: function(equipment, data, cb){
         var normalStates = {
             SystemPower       : 'on',
             PowerOverload     : false,
@@ -195,10 +195,14 @@ module.exports = {
             CoolingFanFault   : false,
         };
 
-        var sensorsParams = equipment.sensors.alarm_sensors_params;
+        var sensorsParams;
         var saveData = {alarm_sensors: {}};
         var pastState,
             eqState = 'ok';
+
+        if (equipment.sensors !== undefined){
+            sensorsParams = equipment.sensors.alarm_sensors_params;
+        }
 
         // First check if sensors params are exists
         // If not, create object {sensorName: false}

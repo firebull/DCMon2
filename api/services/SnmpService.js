@@ -46,7 +46,7 @@ module.exports = {
         var host = {  host: equipment.address,
                       port: 161,
                       community: equipment.snmp_trap,
-                      timeouts: [5000, 10000]};
+                      timeouts: [5000, 10000, 15000, 20000]};
 
         var oids, limits;
 

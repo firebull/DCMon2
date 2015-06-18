@@ -349,6 +349,9 @@
     <div data-bind="template: {name: 'events-item-template'}"></div>
     <!-- /ko -->
     <!-- ko if: $root.detailsTab() == 'sensors' -->
+    <div class="ui segment" data-bind="visible: $root.eqGraphs().length == 0">
+        <%= __('No sensors graphs found') %>
+    </div>
     <div data-bind="template: {name: 'graph-item-template', foreach: $root.eqGraphs, as: 'graph', afterRender: $root.renderGraph}"></div>
     <!-- /ko -->
     <!-- ko if: $root.detailsTab() == 'health' -->
@@ -459,7 +462,11 @@
     <div data-bind="attr: {'id': 'graph-' + name}"></div>
 </script>
 <script type="text/html" id="health-item-template">
-    <table class="ui definition table" data-bind="if: $root.alarmSensors().length > 0">
+    <div class="ui segment" data-bind="visible: $root.alarmSensors().length == 0">
+        <%= __('No alarm sensors found') %>
+    </div>
+    <!-- ko if: $root.alarmSensors().length > 0 -->
+    <table class="ui definition table">
         <tbody data-bind="foreach: $root.alarmSensors">
             <tr data-bind="css: $root.alarmSensorColor($data)">
                 <td data-bind="text: $root.alarmSensorName($data)"></td>
@@ -470,6 +477,7 @@
             </tr>
         </tbody>
     </table>
+    <!-- /ko -->
 </script>
 <script type="text/html" id="eq-info">
     <div class="ui info message" data-bind="visible: $root.eqs()[$root.selectedEq()]().query_configuration">
@@ -590,7 +598,7 @@
 
             self.selectedRack(self.racks.indexOf(rack));
 
-            var eqQuery = {sort: 'name'};
+            var eqQuery = {sort: 'pos_in_rack'};
 
             io.socket.get('/rackmount/' + rack.id + '/equipments', eqQuery, function(data, jwr){
 
@@ -644,6 +652,8 @@
 
                             if (jwr.statusCode == 200){
                                 eq.sensors = data;
+                                return callback(null);
+                            } if (jwr.statusCode == 404) {
                                 return callback(null);
                             } else if (jwr.statusCode == 401){
                                 window.location.href = "/login";
@@ -701,7 +711,11 @@
         this.showAlarmSensors = function(){
             var self = this;
             var eq = self.eqs()[self.selectedEq()]();
-            self.alarmSensors(_.values(eq.sensors.alarm_sensors));
+
+            if (!_.isEmpty(eq.sensors) && !_.isEmpty(eq.sensors.params)){
+                self.alarmSensors(_.values(eq.sensors.alarm_sensors));
+            }
+
             self.detailsTab('health');
         }.bind(this);
 
@@ -770,12 +784,20 @@
         this.loadGraphs = function(){
             var self = this;
 
-            self.loading(true);
+
             self.eqGraphs([]);
             self.sensorsParams(false);
-
             var graphQuery = {from: self.minQueryDate(), to: self.maxQueryDate()};
             var eq = self.eqs()[self.selectedEq()]();
+
+            // Do not need to try load Graphs if we
+            // do not have Graphs params in DB. That can be
+            // if equipment have no sensors or it was just added
+            if (_.isEmpty(eq.sensors) || _.isEmpty(eq.sensors.params)){
+                return true;
+            }
+
+            self.loading(true);
 
             io.socket.get('/equipment/graphs/' + eq.id, graphQuery, function(data, jwr){
 
@@ -1020,6 +1042,13 @@
             var title = "<%= __('Edit equipment sensors limits') %>";
             var eq = self.eqs()[self.selectedEq()]();
 
+            // Do not even try load sensors data if we
+            // do not have Graphs params in DB. That can be
+            // if equipment have no sensors or it was just added
+            if (_.isEmpty(eq.sensors) || _.isEmpty(eq.sensors.params)){
+                return false;
+            }
+
             io.socket.get('/equipment/lastSensorsData/' + eq.id, function(answer, jwr){
                     if (jwr.statusCode == 200){
                         self.lastSensorsData = answer;
@@ -1081,6 +1110,13 @@
             var self = this;
             var title = "<%= __('Edit equipment sensors limits') %>";
             var eq = self.eqs()[self.selectedEq()]();
+
+            // Do not even try load Alarm sensors params if we
+            // do not have Graphs params in DB. That can be
+            // if equipment have no sensors or it was just added
+            if (_.isEmpty(eq.sensors) || _.isEmpty(eq.sensors.params)){
+                return false;
+            }
 
             $('#alarmSensorsModal .header').html(title);
             self.alarmSensorsLastData = eq.sensors.alarm_sensors;
