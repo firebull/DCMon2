@@ -1,12 +1,12 @@
 <div id="configureEquipment">
-    <h3 class="ui purple dividing header">
+    <h3 class="ui blue dividing header">
         <i class="settings icon"></i>
         <div class="content">
             <%= __('Equipment configuration') %>
             <div class="sub header"><%= __('Add equipment to monitor') %></div>
         </div>
     </h3>
-    <h4 class="ui left floated header"><%= __('DataCenters') %></h4>
+    <h4 class="ui left blue floated header"><%= __('DataCenters') %></h4>
     <button class="ui right floated small orange button" data-bind="event: {click: dcForm.bind(false, false)}">
         <i class="plus icon"></i>
         <%= __('New DataCenter') %>
@@ -45,7 +45,7 @@
     <div class="ui clearing divider"></div>
     <p></p>
 
-    <h4 class="ui left floated header"><%= __('RackMounts') %></h4>
+    <h4 class="ui left blue floated header"><%= __('RackMounts') %></h4>
     <button class="ui right floated small orange button" data-bind="event: {click: rackForm.bind(false, false)}, css: {'disabled': dcs().length == 0}">
         <i class="plus icon"></i>
         <%= __('New RackMount') %>
@@ -91,7 +91,7 @@
     <div class="ui clearing divider"></div>
     <p></p>
 
-    <h4 class="ui left floated header"><%= __('Equipment') %></h4>
+    <h4 class="ui left blue floated header"><%= __('Equipment') %></h4>
     <button class="ui right floated small orange button" data-bind="event: {click: eqForm.bind(false, false)}, css: {'disabled': racks().length == 0}">
         <i class="plus icon"></i>
         <%= __('New Equipment') %>
@@ -444,15 +444,13 @@
                 self.modalErrors([]);
 
                 // Prepare data
-                var dataToSave;
-
-                dataToSave = ko.toJS(self.modalData());
+                var dataToSave = _.clone(self.modalData());
 
                 if (url == 'datacenter'){
                     dataToSave.racks = [];
                 } else if (url == 'rackmount'){
 
-                    delete(dataToSave.equipment);
+                    delete(dataToSave.equipments);
 
                     if (self.modalData().datacenter === undefined){
                         delete(dataToSave.datacenter);
@@ -522,6 +520,9 @@
 
         }.bind(this);
 
+        /**
+         * Loading data and save to observableArrays
+         */
         this.loadData = function(){
             var self = this;
             var dcQuery = {sort: 'name'};
@@ -571,7 +572,6 @@
             var eqQuery = {sort: {'rackmount': 1, 'pos_in_rack': 1}};
 
             io.socket.get('/equipment?populate=[rackmount]', eqQuery, function(data, jwr){
-                //console.log(data);
                 if (jwr.statusCode == 200){
                     var equipments = [];
 
@@ -649,7 +649,6 @@
         }.bind(this);
 
         self.loadData();
-
     };
 
     ko.applyBindings(new configEqViewModel(), document.getElementById("configureEquipment"));

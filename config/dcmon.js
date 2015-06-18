@@ -11,7 +11,7 @@ module.exports.dcmon = {
               {name: 'supermicro', longname: 'SuperMicro'},
               {name: 'common', longname: 'Common (SNMP Only)'}],
 
-    // InfluxDB params
+    // InfluxDB parameters
     influx: { host : 'localhost',
               port : 8086, // optional, default 8086
               protocol : 'http', // optional, default 'http'
@@ -21,6 +21,7 @@ module.exports.dcmon = {
               timePrecision : 's'
              },
 
+    // Elasticsearch DB parameters
     elastical: { host : 'localhost',
                  port : 9200
                },

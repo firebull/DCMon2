@@ -113,7 +113,7 @@ module.exports = {
      *      }
      *  }
      */
-    globalSensors: function(rawData, callback){
+    alarmSensors: function(rawData, callback){
         var pattern = XRegExp.cache('^(?<sensor>[\\w\\s\\-\\/]+)\\s*\\:\\s*(?<value>[\\w]+)', 'gi');
         var splitted  = rawData.toString().split('\n');
         var parsed, name, origName, value;

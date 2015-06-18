@@ -115,6 +115,25 @@
                                                            name: 'sensors-limits-form'}"></div>
         </div>
         <div class="actions">
+            <button data-bind="event: {click: $root.saveSensors.bind(false)}" class="ui primary button">
+                <i class="save icon"></i>
+                <%= __('Save') %>
+            </button>
+            <div class="ui button"><%= __('Close') %></div>
+        </div>
+    </div>
+    <div class="ui large modal" id="alarmSensorsModal">
+        <i class="close icon"></i>
+        <div class="header"></div>
+        <div class="content" data-bind="if: alarmSensorsModalData">
+            <div class="description" data-bind="template: {data: alarmSensorsModalData,
+                                                           name: 'alarm-sensors-form'}"></div>
+        </div>
+        <div class="actions">
+            <button data-bind="event: {click: $root.saveAlarmSensors.bind(false)}" class="ui primary button">
+                <i class="save icon"></i>
+                <%= __('Save') %>
+            </button>
             <div class="ui button"><%= __('Close') %></div>
         </div>
     </div>
@@ -223,7 +242,30 @@
                 </tr>
             </tbody>
         </table>
-        <button data-bind="event: {click: $root.saveSensors.bind(false)}" class="ui fluid primary button"><%= __('Save') %></button>
+    </div>
+</script>
+<script type="text/html" id="alarm-sensors-form">
+    <div class="ui form">
+        <table class="ui very basic definition table">
+            <tbody data-bind="foreach: {data: $root.alarmSensorsModalData, as: 'sensor'}">
+                <tr data-bind="css: $root.alarmSensorColor(sensor)">
+                    <td>
+                        <div class="field">
+                            <input type="text" data-bind="attr: {name: sensor.name + 'OrigName'}, value: sensor.origName"/>
+                        </div>
+                    </td>
+                    <td data-bind="text: $root.alarmSensorsLastData[sensor.name].current"></td>
+                    <td>
+                        <div class="inline field">
+                            <div class="ui checkbox">
+                              <input type="checkbox" value="true" data-bind="attr: {id: sensor.name + 'Ignore'}, checked: sensor.ignore">
+                              <label data-bind="attr: {for: sensor.name + 'Ignore'}"></label>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </script>
 <script type="text/html" id="rack-template">
@@ -257,8 +299,11 @@
         <a class="item" title="<%= __('Reset state') %>" data-bind="event: {click: $root.resetState.bind(false)}">
             <i class="undo icon"></i> <%= __('State.Reset') %>
         </a>
-        <a class="item" title="<%= __('Sensors limits configuration') %>" data-bind="event: {click: $root.sensorsLimits.bind(false)}">
+        <a class="item" title="<%= __('Sensors limits configuration') %>" data-bind="event: {click: $root.sensorsLimitsEdit.bind(false)}">
             <i class="setting icon"></i> <%= __('Sensors') %>
+        </a>
+        <a class="item" title="<%= __('Alarm Sensors configuration') %>" data-bind="event: {click: $root.alarmSensorsEdit.bind(false)}">
+            <i class="setting icon"></i> <%= __('Alarm sensors') %>
         </a>
         <a class="item" title="<%= __('Equipment information') %>" data-bind="event: {click: $root.eqInfo.bind(false)}">
             <i class="info icon"></i> <%= __('Info') %>
@@ -295,7 +340,7 @@
             <i class="dashboard icon"></i>
             <%= __('Sensors data') %>
         </a>
-        <a class="item" data-bind="event: {click: $root.showGlobalSensors.bind($data, eq.id)}, css: {active: $root.detailsTab() == 'health'}">
+        <a class="item" data-bind="event: {click: $root.showAlarmSensors.bind($data, eq.id)}, css: {active: $root.detailsTab() == 'health'}">
             <i class="doctor icon"></i>
             <%= __('Health') %>
         </a>
@@ -364,8 +409,14 @@
             </div>
             <div class="field">
                 <label>&nbsp;</label>
-                <button data-bind="event: {click: $root.filter.bind($data)}" class="ui primary button"><%= __('Refresh') %></button>
-                <button data-bind="event: {click: $root.resetFilter.bind($data)}" class="ui button"><%= __('Reset') %></button>
+                <button data-bind="event: {click: $root.filter.bind($data)}" class="ui primary button">
+                    <i class="refresh icon"></i>
+                    <%= __('Refresh') %>
+                </button>
+                <button data-bind="event: {click: $root.resetFilter.bind($data)}" class="ui button">
+                    <i class="undo icon"></i>
+                    <%= __('Reset') %>
+                </button>
             </div>
         </div>
     </div>
@@ -408,13 +459,13 @@
     <div data-bind="attr: {'id': 'graph-' + name}"></div>
 </script>
 <script type="text/html" id="health-item-template">
-    <table class="ui very basic table" data-bind="if: $root.globalSensors().length > 0">
-        <tbody data-bind="foreach: $root.globalSensors">
-            <tr data-bind="css: {positive: status == 'ok', negative: status == 'alert'}">
-                <td data-bind="text: origName"></td>
-                <td data-bind="text: current"></td>
-                <td>
-                    <i class="inverted circular icon" data-bind="css: $root.globalSensorIcon($data)"></i>
+    <table class="ui definition table" data-bind="if: $root.alarmSensors().length > 0">
+        <tbody data-bind="foreach: $root.alarmSensors">
+            <tr data-bind="css: $root.alarmSensorColor($data)">
+                <td data-bind="text: $root.alarmSensorName($data)"></td>
+                <td class="four wide column" data-bind="text: current"></td>
+                <td class="one wide column">
+                    <i class="inverted circular icon" data-bind="css: $root.alarmSensorIcon($data)"></i>
                 </td>
             </tr>
         </tbody>
@@ -440,6 +491,7 @@
     </div>
     <button class="ui fluid primary button" data-bind="event: {click: $root.eqInfoRefresh.bind(false)},
                                                        css: {disabled: $root.eqs()[$root.selectedEq()]().query_configuration}">
+        <i class="refresh icon"></i>
         <%= __('Refresh data') %>
     </button>
 </script>
@@ -449,9 +501,11 @@
 
         this.confirmActions = ko.observable(true);
         this.errors         = ko.observableArray();
+        this.loading        = ko.observable(false);
+
         this.infos          = ko.observableArray();
         this.modalErrors    = ko.observableArray();
-        this.loading        = ko.observable(false);
+
         this.dcs            = ko.observableArray();
         this.selectedDc     = ko.observable(false);
         this.racks          = ko.observableArray();
@@ -466,19 +520,19 @@
         this.sensorsParams  = ko.observable(false);
         this.detailsTab     = ko.observable('events');
         this.commentModalData = ko.observable(false);
-        this.newComment = ko.observable("");
+        this.newComment       = ko.observable("");
         this.sensorsModalData = ko.observableArray();
         this.sensorsLastData  = {};
         this.eqInfoModalData  = ko.observableArray();
-        this.globalSensors    = ko.observableArray();
+        this.alarmSensors     = ko.observableArray();
+        this.alarmSensorsModalData = ko.observableArray();
+        this.alarmSensorsLastData  = {};
 
         // Filter params
         this.minQueryDate = ko.observable(moment().subtract(2, 'hours').format('YYYY-MM-DD HH:mm'));
         this.maxQueryDate = ko.observable(moment().format('YYYY-MM-DD HH:mm'));
         this.eventsRange  = ko.observable('last'); // Either request events by date range or last ones: 'last' or 'filter'
         this.logLevels    = ko.observableArray(['emerg', 'alert', 'crit', 'warn', 'error']);
-
-
 
         this.eqTypesByType     = <%- JSON.stringify(HelperService.eqTypesByType(req)) %>;
         this.protocolsByname   = <%- JSON.stringify(HelperService.protocolsByname(req)) %>;
@@ -488,7 +542,7 @@
         this.vendorsByName     = <%- JSON.stringify(HelperService.vendorsByName()) %>;
         this.yesNo             = <%- JSON.stringify(HelperService.yesNoArray(req)) %>;
 
-        this.plot = [];
+        this.lang = '<%= req.session.lang %>';
 
         /**
          * DataCenter select actions
@@ -560,6 +614,16 @@
                 }
             });
 
+            $('#minTime').datetimepicker({
+                format: 'Y-m-d H:i',
+                lang: self.lang
+            });
+
+            $('#maxTime').datetimepicker({
+                format: 'Y-m-d H:i',
+                lang: self.lang
+            });
+
         }.bind(this);
 
         this.selectEq = function(index, eq){
@@ -567,12 +631,15 @@
 
             self.loading(true);
             self.selectedEq(index);
+            self.eqGraphs([]);
+            self.events([]);
+            self.alarmSensors([]);
 
             var eq = self.eqs()[self.selectedEq()]();
 
             async.series([
                 function(callback){
-                    if (eq.sensors === undefined || eq.sensors >= 0){
+                    if (_.isEmpty(eq.sensors) || eq.sensors >= 0){
                         io.socket.get('/equipment/' + eq.id + '/sensors', function(data, jwr){
 
                             if (jwr.statusCode == 200){
@@ -595,26 +662,23 @@
                     self.loading(false);
 
                     if (self.detailsTab() == 'sensors'){
-                        self.eqGraphs([]);
                         self.loadGraphs(eq.id);
                     } else if (self.detailsTab() == 'events'){
-                        self.events([]);
                         self.loadEvents();
                     } else if (self.detailsTab() == 'health'){
-                        self.globalSensors([]);
-                        self.globalSensors(_.values(eq.sensors.alarm_sensors));
+                        self.alarmSensors(_.clone(_.values(eq.sensors.alarm_sensors)));
                     }
                 }
             });
 
             $('#minTime').datetimepicker({
                 format: 'Y-m-d H:i',
-                lang: 'en' // TODO: Take lang from session
+                lang: self.lang
             });
 
             $('#maxTime').datetimepicker({
                 format: 'Y-m-d H:i',
-                lang: 'en'
+                lang: self.lang
             });
 
         }.bind(this);
@@ -634,26 +698,71 @@
             this.loadEvents();
         }.bind(this);
 
-        this.showGlobalSensors = function(){
+        this.showAlarmSensors = function(){
             var self = this;
             var eq = self.eqs()[self.selectedEq()]();
-            this.globalSensors(_.values(eq.sensors.alarm_sensors));
-            this.detailsTab('health');
+            self.alarmSensors(_.values(eq.sensors.alarm_sensors));
+            self.detailsTab('health');
         }.bind(this);
 
-        this.globalSensorIcon = function(sensor){
+        this.alarmSensorName = function(sensor){
             var self = this;
             var eq = self.eqs()[self.selectedEq()]();
             var sensorsParams = eq.sensors.alarm_sensors_params;
 
-            if (sensorsParams !== undefined
-                    && (sensorsParams[sensor.name] === false || sensorsParams[sensor.name] === undefined)
+            if (sensorsParams === undefined){
+                return '';
+            } else if (sensorsParams[sensor.name] === undefined){
+                return sensor.name;
+            } else if (sensorsParams !== undefined){
+                return sensorsParams[sensor.name].origName;
+            } else {
+                return sensor.name;
+            }
+
+        }.bind(this);
+
+        this.alarmSensorIcon = function(sensor){
+            var self = this;
+            var eq = self.eqs()[self.selectedEq()]();
+            var sensorsParams = eq.sensors.alarm_sensors_params;
+
+            if (sensorsParams === undefined || sensorsParams[sensor.name] === undefined){
+                return 'help';
+            } else if (sensorsParams !== undefined
+                    && (sensorsParams[sensor.name] === undefined || sensorsParams[sensor.name].ignore === false)
                     && sensor.status == 'ok'){
                 return 'green check';
-            } else if (sensorsParams !== undefined && sensorsParams[sensor.name] === true) {
+            } else if (sensorsParams !== undefined && sensorsParams[sensor.name].ignore === true) {
                 return 'grey ban';
             } else if (sensor.status == 'alert'){
                 return 'red warning sign';
+            } else {
+                return 'help';
+            }
+
+        }.bind(this);
+
+        this.alarmSensorColor = function(sensor){
+            var self = this;
+            var eq = self.eqs()[self.selectedEq()]();
+            var sensorsParams = eq.sensors.alarm_sensors_params;
+
+            if (sensorsParams === undefined || sensorsParams[sensor.name] === undefined){
+                return '';
+            } else if (sensorsParams !== undefined
+                    && (sensorsParams[sensor.name] === undefined || sensorsParams[sensor.name].ignore === false)
+                    && sensor.status == 'ok'){
+                if (sensor.type == 'ethernet' && sensor.current != 'up'){
+                    return 'warning';
+                } else {
+                    return 'positive';
+                }
+
+            } else if (sensorsParams !== undefined && sensorsParams[sensor.name].ignore === true) {
+                return '';
+            } else if (sensor.status == 'alert'){
+                return 'negative';
             }
 
         }.bind(this);
@@ -906,7 +1015,7 @@
 
         }.bind(this);
 
-        this.sensorsLimits = function(){
+        this.sensorsLimitsEdit = function(){
             var self = this;
             var title = "<%= __('Edit equipment sensors limits') %>";
             var eq = self.eqs()[self.selectedEq()]();
@@ -922,6 +1031,7 @@
                         $('#sensorsLimitsModal').modal({onHide: function(){
                                                     self.sensorsModalData([]);
                                                     self.modalErrors([]);
+                                                    self.lastSensorsData = {};
                                                     }
                                             }).modal('show').modal('refresh');
 
@@ -956,6 +1066,54 @@
             io.socket.put('/sensors/' + eq.sensors.id, {params: saveData}, function(answer, jwr){
                     if (jwr.statusCode == 200){
                         $('#sensorsLimitsModal').modal('hide');
+                    } else if (jwr.status == 400 && answer.error){
+                        self.modalErrors(answer.error);
+                    } else if (jwr.statusCode == 401){
+                        window.location.href = "/login";
+                    } else {
+                        self.modalErrors.push('ERROR: ' + jwr.statusCode);
+                    }
+            });
+
+        }.bind(this);
+
+        this.alarmSensorsEdit = function(){
+            var self = this;
+            var title = "<%= __('Edit equipment sensors limits') %>";
+            var eq = self.eqs()[self.selectedEq()]();
+
+            $('#alarmSensorsModal .header').html(title);
+            self.alarmSensorsLastData = eq.sensors.alarm_sensors;
+            self.alarmSensorsModalData(_.values(eq.sensors.alarm_sensors_params));
+
+            $('#alarmSensorsModal').modal({onHide: function(){
+                                        self.alarmSensorsModalData([]);
+                                        self.modalErrors([]);
+                                        self.alarmSensorsLastData = {};
+                                        }
+                                }).modal('show').modal('refresh');
+        }.bind(this);
+
+        this.saveAlarmSensors = function(){
+            var self = this;
+            var saveData = {};
+            var eq = self.eqs()[self.selectedEq()]();
+
+            // Prepare data for save
+            _.forEach(self.alarmSensorsModalData(), function(sensor){
+                saveData[sensor.name] = sensor;
+            });
+
+            // Saving data
+            io.socket.put('/sensors/' + eq.sensors.id, {alarm_sensors_params: saveData}, function(answer, jwr){
+                    if (jwr.statusCode == 200){
+                        if (self.detailsTab() == 'health'){
+
+                            self.alarmSensors(_.values(answer.alarm_sensors));
+
+                        }
+
+                        $('#alarmSensorsModal').modal('hide');
                     } else if (jwr.status == 400 && answer.error){
                         self.modalErrors(answer.error);
                     } else if (jwr.statusCode == 401){

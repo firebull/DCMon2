@@ -77,7 +77,7 @@ module.exports = {
                 var sensors_params = {};
 
                 // Let's combine sensor limits from DB and parsed
-                if (equipment.sensors !== undefined  && equipment.sensors.params !== undefined){
+                if (equipment.sensors !== undefined && !_.isEmpty(equipment.sensors.params)){
 
                     parsed.limits.forEach(function(item, i){
 
@@ -115,7 +115,7 @@ module.exports = {
 
     },
 
-    queryAlertSensors: function(equipment, callback){
+    queryAlarmSensors: function(equipment, callback){
 
         var query = {'address':  equipment.address,
                      'login':    equipment.login,
@@ -138,7 +138,7 @@ module.exports = {
 
             parser = eval('Ipmi' + changeCase.pascal(equipment.vendor + 'ParseService'));
 
-            parser.globalSensors(data, function(err, parsed){
+            parser.alarmSensors(data, function(err, parsed){
                 if (err){
                     return callback(err);
                 }

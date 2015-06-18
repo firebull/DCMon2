@@ -120,7 +120,6 @@
 	"Username is required": "Username is required",
 	"Group is required": "Group is required",
 	"Password must be 8 symbols minimum": "Password must be 8 symbols minimum",
-	"`undefined` should be a email (instead of \",jhvb@test.tu\", which is a string)": "`undefined` should be a email (instead of \",jhvb@test.tu\", which is a string)",
 	"Delete this User?": "Delete this User?",
 	"Yes, delete him": "Yes, delete him",
 	"Name": "Name",
@@ -170,5 +169,7 @@
 	"Users to notify": "Users to notify",
 	"Users configuration for Alert": "Users configuration for Alert",
 	"Equipment configuration for Alert": "Equipment configuration for Alert",
-	"No data yet. You can get it by pressing button below.": "No data yet. You can get it by pressing button below."
+	"No data yet. You can get it by pressing button below.": "No data yet. You can get it by pressing button below.",
+	"Alarm Sensors configuration": "Alarm Sensors configuration",
+	"Alarm sensors": "Alarm sensors"
 }

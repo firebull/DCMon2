@@ -78,10 +78,10 @@
 
   <body>
     <div class="ui fixed main menu menu-shadow" id="topMenu">
-        <div class="header item">
+        <a class="header item" href="/">
             <i class="icon" data-bind="css: {'green circle': connected, 'red warning sign': connected() === false }"></i>
             DC Monitor 2
-        </div>
+        </a>
         <!-- ko if: commonStatus() -->
         <div class="item">
             <!-- ko foreach: {data: commonStatus().power, as: 'state'} -->
@@ -214,7 +214,7 @@
     -->
 
     <!--TEMPLATES-->
-    
+
     <!--TEMPLATES END-->
 
     <script type="text/javascript">
@@ -273,7 +273,6 @@
                     self.errors.push('ERROR: ' + jwr.statusCode);
                 }
             });
-
         }.bind(this);
 
         io.socket.on('connect', function(){
@@ -284,10 +283,8 @@
         });
 
         io.socket.on('connect_error',function(obj){
-
             console.log('connect_error');
             console.log(obj);
-
         });
 
         io.socket.on('disconnect', function(){
@@ -329,7 +326,6 @@
             });
 
         }.bind(this);
-
     };
 
     ko.applyBindings(new topMenuViewModel(), document.getElementById("topMenu"));

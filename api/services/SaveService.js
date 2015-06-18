@@ -197,7 +197,8 @@ module.exports = {
 
         var sensorsParams = equipment.sensors.alarm_sensors_params;
         var saveData = {alarm_sensors: {}};
-        var pastState;
+        var pastState,
+            eqState = 'ok';
 
         // First check if sensors params are exists
         // If not, create object {sensorName: false}
@@ -208,11 +209,19 @@ module.exports = {
             // For SNMP requests exclude sensors by default from check
             if (equipment.sensors_proto == 'snmp'){
                 _.forEach(data, function(item, sensorName){
-                    sensorsParams[sensorName] = true;
+                    sensorsParams[sensorName] = {
+                        ignore: true,
+                        name: sensorName,
+                        origName: _.clone(item.origName)
+                    };
                 });
             } else {
                 _.forEach(data, function(item, sensorName){
-                    sensorsParams[sensorName] = false;
+                    sensorsParams[sensorName] = {
+                        ignore: false,
+                        name: sensorName,
+                        origName: _.clone(item.origName)
+                    };
                 });
             }
 
@@ -221,7 +230,7 @@ module.exports = {
 
         _.forEach(data, function(item, sensorName){
             // Check if sensor excluded from check
-            if (sensorsParams[sensorName] === false || sensorsParams[sensorName] === undefined){
+            if (sensorsParams[sensorName].ignore === false || sensorsParams[sensorName] === undefined){
                 // Check if sensor validates normal state
 
                 if (item.type == 'health'){
@@ -231,7 +240,9 @@ module.exports = {
                         sails.dcmonLogger.alert("Sensor '%s' is at fail state! Current: %s. Normal state is: %s.",
                                                 sensorName, item.current, normalStates[sensorName],
                                                 {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+
                         item.status = 'alert';
+                        eqState = 'alert';
                     }
                 } else if (item.type == 'ethernet'){
 
@@ -245,52 +256,80 @@ module.exports = {
                     } else
                     // Warning event if interface is Up, but last state was not Up
                     if (item.current == 'up' && pastState.current != 'up'){
-
-                        item.status = 'ok';
-
                         sails.dcmonLogger.warn("Interface '%s' is now Up, but at last check it was '%s'",
                                                 item.origName, pastState.current,
                                                 {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+
+                        item.status = 'ok';
+                        if (eqState != 'alert'){
+                            eqState = 'warn';
+                        }
                     } else
                     // Alert message if state changes
                     if (pastState.current != item.current) {
-                        item.status = 'alert';
-
                         sails.dcmonLogger.alert("Interface '%s' is now '%s', but at last check it was '%s'",
                                                 item.origName, item.current, pastState.current,
                                                 {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
 
+                        item.status = 'alert';
+                        eqState = 'alert';
                     }
                 }
             }
 
+            // We do not need to store orginal name of alarm sensor in DB
+            // as it is saved in alarm_sensors_params
+            delete(item.origName);
+
             saveData.alarm_sensors[sensorName] = item;
         });
 
-        Sensors.findOrCreate({equipment: equipment.id}, {equipment: equipment.id, alarm_sensors_params: {}, alarm_sensors: {}}).exec(function(err, record){
-            if (err){
-                sails.dcmonLogger.emerg('Could not find or create sensors params record in DB: %s', err,
-                                        {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
-                return cb(err);
-            } else {
-                Sensors.update({'id': record.id}, saveData).exec(function(err, result){
+        async.parallel([
+            function(asyncCallback){
+                Sensors.findOrCreate({equipment: equipment.id}, {equipment: equipment.id, alarm_sensors_params: {}, alarm_sensors: {}}).exec(function(err, record){
                     if (err){
-                        sails.dcmonLogger.emerg('Could not save global sensors data in DB: %s', err,
+                        sails.dcmonLogger.emerg('Could not find or create sensors params record in DB: %s', err,
                                                 {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
-                        return cb(err);
+                        return asyncCallback(err);
                     } else {
-                        Equipment.update({id: equipment.id}, {sensors: record.id}).exec(function(err){
+                        Sensors.update({'id': record.id}, saveData).exec(function(err, result){
                             if (err){
-                                sails.dcmonLogger.emerg('Could not update equipment data in DB: %s', err,
+                                sails.dcmonLogger.emerg('Could not save global sensors data in DB: %s', err,
                                                         {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                return asyncCallback(err);
+                            } else {
+                                Equipment.update({id: equipment.id}, {sensors: record.id}).exec(function(err){
+                                    if (err){
+                                        sails.dcmonLogger.emerg('Could not update equipment data in DB: %s', err,
+                                                                {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                                    }
+                                });
+
+                                return asyncCallback(null);
                             }
                         });
-                        saveData.updatedAt = result[0].updatedAt;
-                        Equipment.publishUpdate(equipment.id, saveData);
-                        return cb(null);
                     }
                 });
-            }
+            },
+            function(asyncCallback){
+                Equipment.update({id: equipment.id}, {sensor_status: eqState}).exec(function(err){
+                    if (err){
+                        sails.dcmonLogger.emerg('Could not update equipment data in DB: %s', err,
+                                                {host: equipment.address, eq: equipment.id, rack: equipment.rackmount.id, dc: equipment.rackmount.datacenter});
+                    }
+
+                    return asyncCallback(null);
+                });
+            },
+        ], function(err){
+            Equipment.findOne({id: equipment.id, select: ['sensor_status']}).populate('sensors').exec(function(err, eq){
+                if (err){
+                    return cb(err);
+                } else {
+                    Equipment.publishUpdate(equipment.id, eq);
+                    return cb(null);
+                }
+            });
         });
     },
 
@@ -310,7 +349,7 @@ module.exports = {
 
         var levels = ['emerg', 'alert', 'crit', 'error', 'warn', 'notice', 'info', 'debug'];
 
-        if (data.length > 0){
+        if (data === undefined || data.length > 0){
 
             var commonStatus = numberLevels[equipment.event_status];
 

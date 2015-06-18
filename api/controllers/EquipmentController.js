@@ -39,13 +39,13 @@ module.exports = {
 							currRack = eq.rackmount;
 							delete(eq.rackmount);
 
-							rack.eqs.push(eq);
-
 							if (currRack.id != lastRack){
 								groupedEqs.push(rack);
 								lastRack = currRack.id;
 								rack = {rackmount: currRack, eqs: []};
 							}
+
+							rack.eqs.push(eq);
 						});
 
 						groupedEqs.push(rack);
@@ -55,6 +55,15 @@ module.exports = {
 				});
 	},
 
+	/**
+	 * Get graphs data point from InfluxDB
+	 *
+	 * Ghraph sensors can be raleated to another which is used to render graphs with two lines.
+	 * @param  {Integer} req.params.id [Equipment ID]
+	 * @param  {String}  req.body.from [from Date/time to request data]
+	 * @param  {String}  req.body.to   [to Date/time to request data]
+	 * @return {Array}   Array of objects
+	 */
     graphs: function(req, res){
         var ip     = require('ip').toLong;
 		var XRegExp = require('xregexp').XRegExp;
@@ -139,7 +148,7 @@ module.exports = {
 								}
 
 							});
-							//console.log(data[0].points);
+
 							return res.ok(data);
 						}
 	                });
@@ -187,14 +196,27 @@ module.exports = {
         });
 	},
 
-    events: function(req, res){
-        var from = moment().subtract(2, 'hours').toJSON(), // Search from datetime
-            to   = moment().toJSON(),                       // Search to datetime
-            by   = 'all', // Search by @field, may be: 'all', 'dc', 'rack', 'host'
-            param,        // Search by param, for eaxmple 192.168.0.50
-            offset = 0,   // Search offset, in elastic it is 'from'
-            limit  = 100, // Search limit, in elastic it is 'size'
-            levels = ['emerg', 'alert', 'crit', 'warn', 'error'], // Array of log levels
+	/**
+	 * Get Event log data from Elasticsearch DB
+	 *
+	 * @param  {Integer}  req.params.id   [Equipment ID]
+	 * @param  {String}   req.body.from   [Search from datetime]
+	 * @param  {String}   req.body.to     [Search to datetime]
+	 * @param  {String}   req.body.by     [Search by @field, may be: 'all', 'dc', 'rack', 'host']
+	 * @param  {String}   req.body.param  [Search by param, for eaxmple 192.168.0.50]
+	 * @param  {Integer}  req.body.offset [Search offset, in elastic it is 'from']
+	 * @param  {Integer}  req.body.limit  [Search limit, in elastic it is 'size']
+	 * @param  {Array}    req.body.levels [log levels]
+	 * @return {Array}    Array of objects
+	 */
+	events: function(req, res){
+        var from = moment().subtract(2, 'hours').toJSON(),
+            to   = moment().toJSON(),
+            by   = 'all',
+            param,
+            offset = 0,
+            limit  = 100,
+            levels = ['emerg', 'alert', 'crit', 'warn', 'error'],
             query = {};
 
         if (req.body){
@@ -298,7 +320,6 @@ module.exports = {
                                                     lenient: true,
                                                     body: {query: query}},
                                             function (err, results){
-                                                //console.log(query.filtered);
                                                     callback(err, results.exists);
                                                 });
                 },
@@ -332,6 +353,18 @@ module.exports = {
             });
     },
 
+	/**
+	 * Get grouped statuses of Equipment
+	 * @return {Object}    States by type
+	 *
+	 * { result:
+	 *			{ 	events:  [ { num: 3, status: 'alert' }, { num: 3, status: 'ok' } ],
+	 *				sensors: [ { num: 6, status: 'ok' } ],
+	 *				power:   [ { num: 6, status: 'on' } ]
+	 *			}
+	 *	}
+	 *
+	 */
     getCommonStatus: function(req, res){
         async.series({
                         events: function(callback){
@@ -357,14 +390,20 @@ module.exports = {
                         if (err){
                             return res.json({url: req.url, result: results, error: err});
                         } else {
-                            return res.json({url: req.url, result: results});
+                            return res.ok({url: req.url, result: results});
                         }
                    }
                 );
     },
 
-	// 1) Query all not confirmed logs by query and confirm them
-	// 2) Set states to OK
+
+	/**
+	 * Query all not confirmed logs by query and confirm them.
+	 * Then set states to OK
+	 * {Integer}  req.params.id   [Equipment ID]
+	 * @return HTTP status '200 OK'
+	 */
+
 	resetState: function(req, res){
 		if (req.params.id){
 			Equipment.findOne({id: req.params.id}).exec(function(err, eq){

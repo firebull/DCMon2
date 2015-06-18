@@ -295,7 +295,7 @@ module.exports = {
      * @param  {Function} callback
      * @return {Object}   to store data in Sensors Table
      */
-    queryAlertSensors: function(equipment, callback){
+    queryAlarmSensors: function(equipment, callback){
         var host = {  host: equipment.address,
                       port: 161,
                       community: equipment.snmp_trap,
@@ -372,7 +372,7 @@ module.exports = {
 
     queryEvents: function(equipment, callback){
 
-        return callback(null);
+        return callback(null, []);
     },
 
     clearEvents: function(equipment, callback){

@@ -35,6 +35,24 @@ module.exports = {
                                             });
                                         }
                                     });
+                                } else if (item.events_proto == 'snmp'){
+                                    sails.logger.info('Query events of %s (%s) trough SNMP', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                    SnmpService.queryEvents(item, function(err, data){
+                                        if (err){
+                                            sails.logger.error('Could not query events through SNMP: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                            asyncCallback(null); // Non critical error, lets continue
+                                        } else {
+                                            // There is now func to save events yet
+                                            //Save sensors to DB and alert if needed
+                                            SaveService.saveEvents(item, data, function(err){
+                                                if (err){
+                                                    asyncCallback(err);
+                                                } else {
+                                                    asyncCallback(null);
+                                                }
+                                            });
+                                        }
+                                    });
                                 } else {
                                     asyncCallback(null);
                                 }
@@ -82,13 +100,13 @@ module.exports = {
                             // Query Alert sensors
                             function(asyncCallback){
                                 if (item.sensors_proto == 'ipmi' || item.sensors_proto == 'ipmiv2'){
-                                    sails.logger.info('Query alert sensors of %s (%s) trough IPMI', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
-                                    IpmiService.queryAlertSensors(item, function(err, data){
+                                    sails.logger.info('Query alarm sensors of %s (%s) trough IPMI', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                    IpmiService.queryAlarmSensors(item, function(err, data){
                                         if (err){
-                                            sails.logger.error('Could not query alert sensors through IPMI: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                            sails.logger.error('Could not query alarm sensors through IPMI: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
                                             asyncCallback(null); // Non critical error, lets continue
                                         } else {
-                                            //Save alert sensors to DB and alert if needed
+                                            //Save alarm sensors to DB and alert if needed
                                             SaveService.saveGlobalSensors(item, data, function(err){
                                                 if (err){
                                                     asyncCallback(err);
@@ -99,13 +117,13 @@ module.exports = {
                                         }
                                     });
                                 } else if (item.sensors_proto == 'snmp'){
-                                    sails.logger.info('Query alert sensors of %s (%s) trough SNMP', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
-                                    SnmpService.queryAlertSensors(item, function(err, data){
+                                    sails.logger.info('Query alarm sensors of %s (%s) trough SNMP', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                    SnmpService.queryAlarmSensors(item, function(err, data){
                                         if (err){
-                                            sails.logger.error('Could not query alert sensors through SNMP: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
+                                            sails.logger.error('Could not query alarm sensors through SNMP: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
                                             asyncCallback(null); // Non critical error, lets continue
                                         } else {
-                                            //Save alert sensors to DB and alert if needed
+                                            //Save alarm sensors to DB and alert if needed
                                             SaveService.saveGlobalSensors(item, data, function(err){
                                                 if (err){
                                                     asyncCallback(err);
