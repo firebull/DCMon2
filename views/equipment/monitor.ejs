@@ -825,7 +825,10 @@
                     sensor.min = point[1];
                 }
 
-                point[0] = new Date(point[0]*1000);
+                if (!_.isDate(point[0])){
+                    point[0] = new Date(point[0]*1000);
+                }
+
                 return result.push(point);
             });
 
@@ -1406,6 +1409,10 @@
                 });
 
                 self.eqs()[eqIndex](eq);
+
+                if (self.detailsTab() == 'health' && eqIndex == self.selectedEq()){
+                    self.alarmSensors(_.clone(_.values(eq.sensors.alarm_sensors)));
+                }
             }
 
           } else if (obj.verb == 'messaged') {

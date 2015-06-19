@@ -14,9 +14,9 @@
            units: 'Volts',
            timestamp: 1431086975 }],
       limits:
-       [ { name: 'SystemTemp', min: -5, max: 75 },
-         { name: 'Cpu1Vcore', min: 0.752, max: 1.352 }] }
-
+       [ { name: 'SystemTemp', origName: 'System Temp', min: -5, max: 75 },
+         { name: 'Cpu1Vcore',  origName: 'CPU1 Vcore', min: 0.752, max: 1.352 }]
+    }
 
  */
 

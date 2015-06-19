@@ -1,5 +1,15 @@
+/**
+ * @description :: Requesting data through ipmitool
+ *
+ */
+
 var changeCase = require('change-case');
 
+/**
+ * Executing ipmitool
+ * @param  {Object}    q        [query params to execute ipmitool]
+ * @return  {Function} callback
+ */
 function ipmiShell(q, callback){
     var spawn = require('child_process').spawn;
 
@@ -13,10 +23,26 @@ function ipmiShell(q, callback){
         params.push(command);
     });
 
-    var ipmitool = spawn('ipmitool', params);
-
     var err     = [],
-        result  = "";
+        result  = "",
+        ipmitool;
+
+    try {
+        ipmitool = spawn('ipmitool', params);
+    } catch (e) {
+        /*
+            Sometimes OS blocks spawn of Ipmitool because of
+            ulimits is set to low.
+            To prevent this it is needed to set ulimits to 1000 or more.
+         */
+        if (e.message == 'spawn EMFILE'){
+            sails.log.error('Could not execute Ipmitool. Error: "%s". This error usually can be fixed by increasing ulimits to 1000 or more.', e.message);
+        } else {
+            sails.log.error(e);
+        }
+
+        return callback(err, result);
+    }
 
     ipmitool.stdout.on('data', function (data) {
         result =  result + data.toString();
@@ -45,6 +71,14 @@ function ipmiShell(q, callback){
 
 
 module.exports = {
+
+    /**
+     * Query sensors.
+     * Fot IPMI proto that is sensors like Temp, Voltage, FAN RPM and so on
+     * @param  {Object}   equipment data from DB
+     * @param  {Function} callback
+     * @return {Object}   to store data in InfluxDB to create graphs
+     */
     querySensors: function(equipment, callback){
 
         var query = {'address':  equipment.address,
@@ -62,8 +96,10 @@ module.exports = {
 
         ipmiShell(query, function(err, data){
 
-            if (err.length > 0){
+            if (err !== null && err.length > 0){
                 return callback(err, {});
+            } else if (data === null){
+                return callback(null, {});
             }
 
             parser = eval('Ipmi' + changeCase.pascal(equipment.vendor + 'ParseService'));
@@ -115,6 +151,13 @@ module.exports = {
 
     },
 
+    /**
+     * Query alert sensors
+     * For IPMI ptoto that data returned by 'chassis status' command
+     * @param  {Object}   equipment data from DB
+     * @param  {Function} callback
+     * @return {Object}   to store data in Sensors Table
+     */
     queryAlarmSensors: function(equipment, callback){
 
         var query = {'address':  equipment.address,
@@ -150,6 +193,13 @@ module.exports = {
 
     },
 
+    /**
+     * Query events
+     * For IPMI ptoto that is data returned by 'sel elist' command
+     * @param  {Object}   equipment data from DB
+     * @param  {Function} callback
+     * @return {Array}    event messages from Vendor parser
+     */
     queryEvents: function(equipment, callback){
 
         var query = {'address':  equipment.address,
@@ -182,7 +232,7 @@ module.exports = {
 
     /**
      * Clear events
-     * @param  {Object}   equipment [requested equipment data]
+     * @param  {Object}   equipment [equipment data from DB]
      * @param  {Function} callback
      */
     clearEvents: function(equipment, callback){
@@ -209,6 +259,14 @@ module.exports = {
         });
     },
 
+    /**
+     * Query common non-critical information
+     * For IPMI ptoto that is data returned by 'mc info', 'mc watchdog get',
+     * 'fru', 'sol info', 'user list', 'session info all' commands
+     * @param  {Object}   equipment data from DB
+     * @param  {Function} callback
+     * @return {Object}   parsed data to store in EqInfo table
+     */
     queryFullInfo: function(equipment, callback){
 
         if (equipment.query_configuration === false){

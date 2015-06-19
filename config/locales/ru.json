@@ -159,5 +159,7 @@
 	"Error.Passport.Password.NotSet": "Нет паспорта",
 	"Alarm Sensors configuration": "Настройка датчиков",
 	"Alarm sensors": "Датчики",
-	"No data yet. You can get it by pressing button below.": "Пока нет данных. Вы можете получить их нажав кнопку ниже."
+	"No data yet. You can get it by pressing button below.": "Пока нет данных. Вы можете получить их нажав кнопку ниже.",
+	"No sensors graphs found": "No sensors graphs found",
+	"No alarm sensors found": "No alarm sensors found"
 }

@@ -1,5 +1,5 @@
 /**
- *  Main Service to query equipment through SNMP
+ *  @description :: Main Service to query equipment through SNMP
  */
 
 var XRegExp = require('xregexp').XRegExp;
@@ -8,6 +8,14 @@ var snmp = require('snmp-native');
 var util = require('util');
 var moment = require('moment');
 
+/**
+ * Run list of get requests by SNMP
+ * @help :: https://github.com/calmh/node-snmp-native#getalloptions-callback
+ * @param  {Object}   host     [host parameters]
+ * @param  {Array}    oids     [list of OIDs to request]
+ * @param  {Function} callback
+ * @return {Array}             [answers for each request]
+ */
 function snmpGet(host, oids, callback){
     // Create a Session with given host, port, and community.
     var session = new snmp.Session(host);
@@ -26,6 +34,14 @@ function snmpGet(host, oids, callback){
     });
 }
 
+/**
+ * Perform repeated GetNextRequests to fetch all values in the specified tree
+ * @help :: https://github.com/calmh/node-snmp-native#getsubtreeoptions-callback
+ * @param  {Object}   host     [host parameters]
+ * @param  {Array}    oids     [list of OIDs to request]
+ * @param  {Function} callback
+ * @return {Array}             [raw answers for each subtree]
+ */
 function snmpTree(host, oid, callback){
     // Create a Session with given host, port, and community.
     var session = new snmp.Session(host);
@@ -41,6 +57,14 @@ function snmpTree(host, oid, callback){
 }
 
 module.exports = {
+
+    /**
+     * Query sensors.
+     * Fot SNMP proto that is ethernet and VLAN interfaces of LAN devices
+     * @param  {Object}   equipment data from DB
+     * @param  {Function} callback
+     * @return {Object}   to store data in InfluxDB to create graphs
+     */
     querySensors: function(equipment, callback){
 
         var host = {  host: equipment.address,
@@ -380,6 +404,14 @@ module.exports = {
         return callback(null);
     },
 
+    /**
+     * Query common non-critical information
+     * For SNMP ptoto that is data returned by 'Description', 'Uptime',
+     * 'System contact', 'System name', 'System location' OIDs
+     * @param  {Object}   equipment data from DB
+     * @param  {Function} callback
+     * @return {Object}   parsed data to store in EqInfo table
+     */
     queryFullInfo: function(equipment, callback){
         var host = {  host: equipment.address,
                       port: 161,
