@@ -6,7 +6,7 @@ module.exports = {
          .populate('sensors')
          .exec(function(err, eqs){
             if (err){
-                sails.logger.error('Could not get equipment list from DB: %s', err);
+                return callback('Could not get equipment list from DB: ' + err);
             } else {
 
                 if (eqs.length > 0){
@@ -22,15 +22,15 @@ module.exports = {
                                     IpmiService.queryEvents(item, function(err, data){
                                         if (err && err.toString().trim() != 'SEL has no entries'){
                                             sails.logger.error('Could not query events through IPMI: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
-                                            asyncCallback(null); // Non critical error, lets continue
+                                            return asyncCallback(null); // Non critical error, lets continue
                                         } else {
                                             // There is now func to save events yet
                                             //Save sensors to DB and alert if needed
                                             SaveService.saveEvents(item, data, function(err){
                                                 if (err){
-                                                    asyncCallback(err);
+                                                    return asyncCallback(err);
                                                 } else {
-                                                    asyncCallback(null);
+                                                    return asyncCallback(null);
                                                 }
                                             });
                                         }
@@ -40,21 +40,21 @@ module.exports = {
                                     SnmpService.queryEvents(item, function(err, data){
                                         if (err){
                                             sails.logger.error('Could not query events through SNMP: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
-                                            asyncCallback(null); // Non critical error, lets continue
+                                            return asyncCallback(null); // Non critical error, lets continue
                                         } else {
                                             // There is now func to save events yet
                                             //Save sensors to DB and alert if needed
                                             SaveService.saveEvents(item, data, function(err){
                                                 if (err){
-                                                    asyncCallback(err);
+                                                    return asyncCallback(err);
                                                 } else {
-                                                    asyncCallback(null);
+                                                    return asyncCallback(null);
                                                 }
                                             });
                                         }
                                     });
                                 } else {
-                                    asyncCallback(null);
+                                    return asyncCallback(null);
                                 }
                             },
                             // Query sensors
@@ -64,14 +64,14 @@ module.exports = {
                                     IpmiService.querySensors(item, function(err, data){
                                         if (err){
                                             sails.logger.error('Could not query sensors through IPMI: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
-                                            asyncCallback(null); // Non critical error, lets continue
+                                            return asyncCallback(null); // Non critical error, lets continue
                                         } else {
                                             //Save sensors to DB and alert if needed
                                             SaveService.saveSensors(item, data, function(err){
                                                 if (err){
-                                                    asyncCallback(err);
+                                                    return asyncCallback(err);
                                                 } else {
-                                                    asyncCallback(null);
+                                                    return asyncCallback(null);
                                                 }
                                             });
                                         }
@@ -81,20 +81,20 @@ module.exports = {
                                     SnmpService.querySensors(item, function(err, data){
                                         if (err){
                                             sails.logger.error('Could not query sensors through SNMP: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
-                                            asyncCallback(null); // Non critical error, lets continue
+                                            return asyncCallback(null); // Non critical error, lets continue
                                         } else {
                                             //Save sensors to DB and alert if needed
                                             SaveService.saveSensors(item, data, function(err){
                                                 if (err){
-                                                    asyncCallback(err);
+                                                    return asyncCallback(err);
                                                 } else {
-                                                    asyncCallback(null);
+                                                    return asyncCallback(null);
                                                 }
                                             });
                                         }
-                                    })
+                                    });
                                 } else {
-                                    asyncCallback(null);
+                                    return asyncCallback(null);
                                 }
                             },
                             // Query Alarm sensors
@@ -104,14 +104,14 @@ module.exports = {
                                     IpmiService.queryAlarmSensors(item, function(err, data){
                                         if (err){
                                             sails.logger.error('Could not query alarm sensors through IPMI: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
-                                            asyncCallback(null); // Non critical error, lets continue
+                                            return asyncCallback(null); // Non critical error, lets continue
                                         } else {
                                             //Save alarm sensors to DB and alert if needed
                                             SaveService.saveAlarmSensors(item, data, function(err){
                                                 if (err){
-                                                    asyncCallback(err);
+                                                    return asyncCallback(err);
                                                 } else {
-                                                    asyncCallback(null);
+                                                    return asyncCallback(null);
                                                 }
                                             });
                                         }
@@ -121,20 +121,20 @@ module.exports = {
                                     SnmpService.queryAlarmSensors(item, function(err, data){
                                         if (err){
                                             sails.logger.error('Could not query alarm sensors through SNMP: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
-                                            asyncCallback(null); // Non critical error, lets continue
+                                            return asyncCallback(null); // Non critical error, lets continue
                                         } else {
                                             //Save alarm sensors to DB and alert if needed
                                             SaveService.saveAlarmSensors(item, data, function(err){
                                                 if (err){
-                                                    asyncCallback(err);
+                                                    return asyncCallback(err);
                                                 } else {
-                                                    asyncCallback(null);
+                                                    return asyncCallback(null);
                                                 }
                                             });
                                         }
                                     });
                                 } else {
-                                    asyncCallback(null);
+                                    return asyncCallback(null);
                                 }
                             },
                             // Query information
@@ -148,14 +148,14 @@ module.exports = {
                                     IpmiService.queryFullInfo(item, function(err, data){
                                         if (err){
                                             sails.logger.error('Could not query equipment information IPMI: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
-                                            asyncCallback(null); // Non critical error, lets continue
+                                            return asyncCallback(null); // Non critical error, lets continue
                                         } else {
                                             //Save information to DB and alert if needed
                                             SaveService.saveInfo(item, data, function(err){
                                                 if (err){
-                                                    asyncCallback(err);
+                                                    return asyncCallback(err);
                                                 } else {
-                                                    asyncCallback(null);
+                                                    return asyncCallback(null);
                                                 }
                                             });
                                         }
@@ -167,32 +167,31 @@ module.exports = {
 
                                     sails.logger.info('Query equipment information of %s (%s) trough SNMP', item.name, item.address, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
                                     SnmpService.queryFullInfo(item, function(err, data){
-                                        console.log(err);
                                         if (err){
                                             sails.logger.error('Could not query equipment information SNMP: %s', err, {host: item.address, eq: item.id, rack: item.rackmount.id, dc: item.rackmount.datacenter});
-                                            asyncCallback(null); // Non critical error, lets continue
+                                            return asyncCallback(null); // Non critical error, lets continue
                                         } else {
                                             //Save information to DB and alert if needed
                                             SaveService.saveInfo(item, data, function(err){
                                                 if (err){
-                                                    asyncCallback(err);
+                                                    return asyncCallback(err);
                                                 } else {
-                                                    asyncCallback(null);
+                                                    return asyncCallback(null);
                                                 }
                                             });
                                         }
                                     });
                                 } else {
-                                    asyncCallback(null);
+                                    return asyncCallback(null);
                                 }
                             }
                         ],
                         // set global eachLimit callback
                         function(seriesErr){
                             if (seriesErr){
-                                eachCallback(seriesErr);
+                                return eachCallback(seriesErr);
                             } else {
-                                eachCallback(null);
+                                return eachCallback(null);
                             }
                         });
                     }, function(err){
@@ -201,15 +200,15 @@ module.exports = {
                             // One of the iterations produced an error.
                             // All processing will now stop.
                             sails.dcmonLogger.alert('Emergency error while query of the equipment list. Read previous messages.');
-                            callback(err, eqs);
+                            return callback(err, eqs);
                         } else {
                             // Query finished without errors
-                            callback(null, eqs);
+                            return callback(null, eqs);
                         }
                     });
 
                 } else {
-                    callback(null, eqs);
+                    return callback(null);
                 }
             }
          });

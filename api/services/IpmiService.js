@@ -33,10 +33,10 @@ function ipmiShell(q, callback){
         /*
             Sometimes OS blocks spawn of Ipmitool because of
             ulimits is set to low.
-            To prevent this it is needed to set ulimits to 1000 or more.
+            To prevent this it is needed to set ulimits to 10000 or more.
          */
         if (e.message == 'spawn EMFILE'){
-            sails.log.error('Could not execute Ipmitool. Error: "%s". This error usually can be fixed by increasing ulimits to 1000 or more.', e.message);
+            sails.log.error('Could not execute Ipmitool. Error: "%s". This error usually can be fixed by increasing ulimits to 10000 or more.', e.message);
         } else {
             sails.log.error(e);
         }
@@ -55,17 +55,41 @@ function ipmiShell(q, callback){
     ipmitool.on('close', function (code) {
 
         if (code !== 0) {
-            err.push('Ipmitool exited with code: ' + code);
+            err.push('Ipmitool closed with code: ' + code);
 
         }
 
         ipmitool.stdin.end();
-        callback(err, result);
+        ipmitool.stdout.end();
+        ipmitool.stderr.end();
+
+    });
+
+    ipmitool.on('exit', function (code) {
+
+        if (code !== 0) {
+            err.push('Ipmitool exited with code: ' + code);
+
+        }
+
+        if (ipmitool.connected){
+            ipmitool.kill();
+        }
+
+        return callback(err, result);
 
     });
 
     ipmitool.on('error', function (error) {
-        ipmitool.stdin.end();
+
+        if (ipmitool.connected){
+            ipmitool.stdin.end();
+            ipmitool.stdout.end();
+            ipmitool.stderr.end();
+            ipmitool.kill();
+        }
+
+        return callback(err, result);
     });
 }
 

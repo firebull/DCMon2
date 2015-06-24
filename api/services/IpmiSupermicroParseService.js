@@ -97,7 +97,7 @@ module.exports = {
             }
         });
 
-        callback(false, result);
+        return callback(false, result);
     },
 
     /**
@@ -146,7 +146,7 @@ module.exports = {
             }
         });
 
-        callback(null, result);
+        return callback(null, result);
     },
 
     events: function(rawData, callback){
@@ -180,6 +180,8 @@ module.exports = {
                 if (string.trim() !== ''){
                     message = 'Unknown event: ' + string;
                     logTimestamp = timestamp;
+                } else {
+                    return;
                 }
             }
 
@@ -204,7 +206,7 @@ module.exports = {
             result.push({msg: message, timestamp: logTimestamp, level: logLevel});
         });
 
-        callback(false, result);
+        return callback(false, result);
 
     }
 };

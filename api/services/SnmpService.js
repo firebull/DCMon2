@@ -188,12 +188,12 @@ module.exports = {
                         id: elasticId
                     }, function (error, response) {
                         if (error){
-                            cb(err);
+                            return cb(err);
                         } else {
                             if (response && response.found === true){
-                                cb(null, response._source.data);
+                                return cb(null, response._source.data);
                             } else {
-                                cb(null);
+                                return cb(null);
                             }
                         }
                     });
@@ -210,15 +210,15 @@ module.exports = {
                           }
                       }, function (error, result) {
                             if (error){
-                                cb(err);
+                                return cb(err);
                             } else {
-                                cb(null, result);
+                                return cb(null, result);
                             }
                         });
                 }
             }, function(err, results){
                 if (err){
-                    callback(err);
+                    return callback(err);
                 } else {
                     var result = [];
                     var currentUtilization;
@@ -304,7 +304,7 @@ module.exports = {
 
                     result = {limits: limits, sensors: sensors};
 
-                    callback(null, result);
+                    return callback(null, result);
                 }
             });
 
