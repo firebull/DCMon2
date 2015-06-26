@@ -36,7 +36,9 @@ function ipmiShell(q, callback){
             To prevent this it is needed to set ulimits to 10000 or more.
          */
         if (e.message == 'spawn EMFILE'){
-            sails.log.error('Could not execute Ipmitool. Error: "%s". This error usually can be fixed by increasing ulimits to 10000 or more.', e.message);
+            var msg = util.format('Could not execute Ipmitool. Error: "%s". This error usually can be fixed by increasing ulimits to 10000 or more.', e.message);
+            sails.log.error(msg);
+            throw new Error(msg);
         } else {
             sails.log.error(e);
         }
