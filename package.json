@@ -1,7 +1,7 @@
 {
   "name": "DCMonitor2",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Monitor different equipment by IPMI, iLo or SNMP",
   "keywords": [
     "IPMI",
@@ -43,7 +43,8 @@
   },
   "scripts": {
     "start": "node app.js",
-    "debug": "node debug app.js"
+    "debug": "node debug app.js",
+    "test": "mocha test/bootstrap.test.js test/unit/**/*.test.js"
   },
   "main": "app.js",
   "repository": {

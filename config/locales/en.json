@@ -174,5 +174,6 @@
 	"Alarm sensors": "Alarm sensors",
 	"No sensors graphs found": "No sensors graphs found",
 	"No Alarm sensors found": "No Alarm sensors found",
-	"No alarm sensors found": "No alarm sensors found"
+	"No alarm sensors found": "No alarm sensors found",
+	"Username is already taken": "Username is already taken"
 }

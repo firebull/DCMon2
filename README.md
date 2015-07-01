@@ -8,7 +8,7 @@ This is Opensource project based on my other project written in Python. That ver
 
 Why do I want to make one more monitoring utility? Well, in fact there is no any lightweight utility to monitor really big number of servers through IPMI: to get there sensors, event logs, handle their events and alert admins. In my own experience, often troubles can be predicted much earlier if you get low level data such as IPMI Event logs and sensors.
 
-Client side is written using Knockout.js to render data recieved from server by Websockets events. Interface is fast, lightweight and simple, created with Semantic-UI. 
+Client side is written using Knockout.js to render data recieved from server by Websockets events. Interface is fast, lightweight and simple, created with Semantic-UI.
 
 ## Install
 
@@ -50,5 +50,11 @@ Go to http://localhost/config/eq (or your real host address) and add Datacenter,
 #### Supported equipment status
  * **IPMI protocol:** only Supermicro servers supported;
  * **SNMP protocol:** only LAN devices supported. Basic features like lan ports traffic and states.
+
+#### Tests
+Tests coverage is in development yet. For current tests run:
+```bash
+npm test
+```
 
 a [Sails](http://sailsjs.org) application
