@@ -5,6 +5,9 @@
  */
 
 module.exports.dcmon = {
+    // Basic Admin user, created at server start
+    admin: { name:     'admin',
+             password: 'Admin12345' },
 
     // List of avaliable vendors
     vendors: [{name: 'hp', longname: 'HP'},
@@ -18,13 +21,11 @@ module.exports.dcmon = {
               username : 'dbuser',
               password : 'f4ncyp4ass',
               database : 'my_database',
-              timePrecision : 's'
-             },
+              timePrecision : 's' },
 
     // Elasticsearch DB parameters
     elastical: { host : 'localhost',
-                 port : 9200
-               },
+                 port : 9200 },
 
     // Number of parallel threads of quering equipments
     numOfThreads: 50

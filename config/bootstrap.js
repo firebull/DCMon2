@@ -171,9 +171,9 @@ module.exports.bootstrap = function(cb) {
     });
 
     // Create deafult Admin user
-    User.findOne({username: 'admin'}).exec(function(err, user){
+    User.findOne({username: sails.config.dcmon.admin.name}).exec(function(err, user){
         if (!user){
-            var admin = {username: 'admin',
+            var admin = {username: sails.config.dcmon.admin.name,
                          first_name: 'Administrator',
                          email: 'admin@local.local',
                          group: 1};
@@ -182,7 +182,7 @@ module.exports.bootstrap = function(cb) {
                 if (err){
                     sails.log.error('Could not create admin user: %s. You wont be able to login!', err);
                 } else {
-                    var userPassport = { password: 'Admin12345',
+                    var userPassport = { password: sails.config.dcmon.admin.password,
                                          user: created.id,
                                          protocol: 'local'};
 

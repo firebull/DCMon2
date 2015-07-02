@@ -4,47 +4,50 @@ describe('UserController', function() {
     var agent;
     var user, sessionUser;
 
-    describe('#unauthoritive access check', function() {
-        this.timeout(3000);
-        it('should block unauthoritive access to user profile', function (done) {
-            agent = request.agent(sails.hooks.http.app);
-            agent
-              .get('/user/me')
-              .expect(401)
-              .end(done);
-        });
+    before(function(done) {
+        agent = request.agent(sails.hooks.http.app);
+        done();
     });
 
-    describe('#login()', function() {
-        it('should redirect to /', function (done) {
+    describe('#unauthoritive access check and login', function() {
+        this.timeout(3000);
+
+        it('should block unauthoritive access to user profile', function () {
+            agent
+            .get('/user/me')
+            .expect(401)
+            .end();
+        });
+
+        it('after login should redirect to /', function(done) {
             agent
             .post('/auth/local')
-            .field('identifier', 'admin')
-            .field('password', 'Admin12345' )
+            .field('identifier', sails.config.dcmon.admin.name)
+            .field('password', sails.config.dcmon.admin.password )
             .expect(302)
             .expect('location','/')
             .end(done);
-
         });
+
     });
 
     describe('#me()', function() {
         this.timeout(2000);
         it('should allow authenticated access to user profile', function (done) {
             agent
-              .get('/user/me')
-              .expect(200)
-              .end(function(err, res){
-                    if (err) throw err;
+            .get('/user/me')
+            .expect(200)
+            .end(function(err, res){
+                if (err) throw err;
 
-                    if (_.isEmpty(res.body)){
-                        throw 'Recieved empty user session data';
-                    } else {
-                        sessionUser = res.body;
-                    }
+                if (_.isEmpty(res.body)){
+                    throw 'Recieved empty user session data';
+                } else {
+                    sessionUser = res.body;
+                }
 
-                    done();
-                });
+                done();
+            });
         });
     });
 
@@ -52,23 +55,23 @@ describe('UserController', function() {
         this.timeout(3000);
         it('should create testuser "mochatest"', function (done) {
             agent
-              .post('/user')
-              .send({ username  : 'mochatest',
-                      first_name: 'Mocha',
-                      last_name : 'Test',
-                      email     : 'mochatest@dcmon.local',
-                      group     : 1})
-              .expect(201)
-              .end(function(err, res){
-                    if (err) throw err;
+            .post('/user')
+            .send({ username  : 'mochatest',
+                    first_name: 'Mocha',
+                    last_name : 'Test',
+                    email     : 'mochatest@dcmon.local',
+                    group     : 1})
+            .expect(201)
+            .end(function(err, res){
+                if (err) throw err;
 
-                    if (_.isEmpty(res.body)){
-                        throw 'Recieved empty result';
-                    }
+                if (_.isEmpty(res.body)){
+                    throw 'Recieved empty result';
+                }
 
-                    user = res.body;
-                    done();
-                });
+                user = res.body;
+                done();
+            });
         });
     });
 
@@ -166,6 +169,16 @@ describe('UserController', function() {
             agent
             .delete('/user/' + user.id)
             .expect(200)
+            .end(done);
+        });
+    });
+
+    describe('#logout()', function() {
+        it('after logout should redirect to /login', function(done) {
+            agent
+            .get('/logout')
+            .expect(302)
+            .expect('location','/login')
             .end(done);
         });
     });

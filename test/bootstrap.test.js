@@ -8,7 +8,6 @@ before(function(done) {
     }, function(err, server) {
         sails = server;
         if (err) return done(err);
-        // here you can load fixtures, etc.
         done(err, sails);
     });
 });
