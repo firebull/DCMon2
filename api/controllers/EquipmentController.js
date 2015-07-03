@@ -10,9 +10,7 @@ var moment = require('moment');
 
 module.exports = {
 	monitor: function(req, res){
-
         return res.view({'url': req.url});
-
     },
 
 	/**
@@ -59,9 +57,9 @@ module.exports = {
 	 * Get graphs data point from InfluxDB
 	 *
 	 * Ghraph sensors can be raleated to another which is used to render graphs with two lines.
-	 * @param  {Integer} req.params.id [Equipment ID]
-	 * @param  {String}  req.body.from [from Date/time to request data]
-	 * @param  {String}  req.body.to   [to Date/time to request data]
+	 * @param  {Integer} req.params.id  Equipment ID
+	 * @param  {String}  req.body.from  From Date/time to request data
+	 * @param  {String}  req.body.to    To Date/time to request data
 	 * @return {Array}   Array of objects
 	 */
     graphs: function(req, res){
@@ -199,14 +197,14 @@ module.exports = {
 	/**
 	 * Get Event log data from Elasticsearch DB
 	 *
-	 * @param  {Integer}  req.params.id   [Equipment ID]
-	 * @param  {String}   req.body.from   [Search from datetime]
-	 * @param  {String}   req.body.to     [Search to datetime]
-	 * @param  {String}   req.body.by     [Search by @field, may be: 'all', 'dc', 'rack', 'host']
-	 * @param  {String}   req.body.param  [Search by param, for eaxmple 192.168.0.50]
-	 * @param  {Integer}  req.body.offset [Search offset, in elastic it is 'from']
-	 * @param  {Integer}  req.body.limit  [Search limit, in elastic it is 'size']
-	 * @param  {Array}    req.body.levels [log levels]
+	 * @param  {Integer}  req.params.id    Equipment ID
+	 * @param  {String}   req.body.from    Search from datetime
+	 * @param  {String}   req.body.to      Search to datetime
+	 * @param  {String}   req.body.by      Search by @field, may be: 'all', 'dc', 'rack', 'host'
+	 * @param  {String}   req.body.param   Search by param, for eaxmple 192.168.0.50
+	 * @param  {Integer}  req.body.offset  Search offset, in elastic it is 'from'
+	 * @param  {Integer}  req.body.limit   Search limit, in elastic it is 'size'
+	 * @param  {Array}    req.body.levels  log levels
 	 * @return {Array}    Array of objects
 	 */
 	events: function(req, res){
@@ -357,6 +355,7 @@ module.exports = {
 	 * Get grouped statuses of Equipment
 	 * @return {Object}    States by type
 	 *
+	 * @example
 	 * { result:
 	 *			{ 	events:  [ { num: 3, status: 'alert' }, { num: 3, status: 'ok' } ],
 	 *				sensors: [ { num: 6, status: 'ok' } ],
@@ -429,7 +428,6 @@ module.exports = {
 
 		                                    }
 	                            };
-
 
 				async.waterfall([
 		                function(callback){
@@ -514,8 +512,8 @@ module.exports = {
 		}
 	},
 
+	// Just test function to run query manually
     testQuery: function(req, res){
-
         QueryService.queryEqs(function(err, result){
             return res.json({url: req.url, data: result});
         });

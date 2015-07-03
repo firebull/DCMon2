@@ -85,7 +85,7 @@ module.exports = {
                                     }
                                 }
                             }, function (err, response) {
-                                console.log(response);
+
                                 if (err){
                                     callback(err);
                                 } else {
