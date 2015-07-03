@@ -53,7 +53,7 @@ describe('UserController', function() {
 
     describe('#create()', function() {
         this.timeout(3000);
-        it('should create testuser "mochatest"', function (done) {
+        it('should create test user "mochatest"', function (done) {
             agent
             .post('/user')
             .send({ username  : 'mochatest',

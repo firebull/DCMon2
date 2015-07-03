@@ -6,7 +6,7 @@ describe('EventsController', function() {
     var testMsg, agent;
 
     before(function(done){
-        agent = request.agent(sails.hooks.http.app);
+
 
         // Need to create test record before
         var msg = "Mocha test message";
@@ -24,9 +24,12 @@ describe('EventsController', function() {
             index: 'logs',
             type: 'info',
             body: entry
-        }, function save( error, res ) {
+        }, function(error, res) {
+
                 if (error) return done(error);
                 testMsg = res;
+
+                agent = request.agent(sails.hooks.http.app);
 
                 agent
                 .post('/auth/local')

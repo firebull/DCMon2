@@ -10,7 +10,10 @@ var moment = require('moment');
 module.exports = {
 
   /**
-   * `EventsController.confirm()`
+   * Confirm an Event message
+   * @param  {String} req.params.type  Elasticsearch index type
+   * @param  {String} req.params.id    Elasticsearch index ID
+   * @return {JSON} HTTP Status 200 or 400
    */
   confirm: function (req, res) {
     if (req.params.type && req.params.id){
@@ -32,9 +35,10 @@ module.exports = {
 
                                 if (err){
                                     sails.logger.error(' Could not confirm event id %s: %s', req.params.id, err);
+                                    res.status(400);
                                     return res.json({error: err});
                                 } else {
-                                    return res.json({result: 'ok'});
+                                    return res.ok({result: 'ok'});
                                 }
                             });
     } else {
@@ -43,7 +47,12 @@ module.exports = {
   },
 
   /**
-   * `EventsController.comment()`
+   * Save comment for an Event message
+   * Stores comments in JSON with timestamp, commenter User ID and Username
+   * @param  {String} req.params.type   Elasticsearch index type
+   * @param  {String} req.params.id     Elasticsearch index ID
+   * @param  {String} req.body.comment  Comment text to save
+   * @return {JSON} HTTP Status 200 or 400
    */
   comment: function (req, res) {
     if (req.params.type && req.params.id && req.body.comment){
@@ -121,9 +130,13 @@ module.exports = {
     }
   },
 
-
   /**
-   * `EventsController.delete()`
+   * Deletes an Event message and save the message
+   * in local file log after that
+   *
+   * @param  {String} req.params.type  Elasticsearch index type
+   * @param  {String} req.params.id    Elasticsearch index ID
+   * @return {JSON} HTTP Status 200 or 400
    */
   delete: function (req, res) {
     if (req.params.type && req.params.id){
