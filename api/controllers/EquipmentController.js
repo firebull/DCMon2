@@ -101,27 +101,28 @@ module.exports = {
 				var query = '';
 
 				if (eq.sensors === undefined || eq.sensors === 0){
-                	query = util.format("SELECT DISTINCT(value) AS value FROM /^ip%s\./i WHERE time > %ss group by time(%sm) ORDER ASC", ip(eq.address), from, distinctTime);
+                	query = util.format("SELECT DISTINCT(value) AS value FROM /^ip%s\./i WHERE time > %ss AND time < %ss GROUP BY time(%sm) ORDER ASC", ip(eq.address), from, to, distinctTime);
 				} else {
 					_.forEach(eq.sensors.params, function(param){
 						if (param.related === false){
-							query = query + util.format("SELECT DISTINCT(value) AS value FROM ip%s.%s WHERE time > %ss group by time(%sm) ORDER ASC; ", ip(eq.address), param.name, from, distinctTime);
+							query = query + util.format("SELECT DISTINCT(value) AS value FROM ip%s.%s WHERE time > %ss AND time < %ss group by time(%sm) ORDER ASC; ", ip(eq.address), param.name, from, to, distinctTime);
 						} else if (param.related != 'secondary') {
 							paramRelated = eq.sensors.params[param.related];
 							query = query + _.template("SELECT DISTINCT(${ sen_1 }.value) AS ${ sen_1 }, \
 							                                    DISTINCT(${ sen_2 }.value) AS ${ sen_2 } \
 														FROM ip${ ip }.${ param_main } AS ${ sen_1 } \
 														INNER JOIN ip${ ip }.${ param_related } AS ${ sen_2 } \
-														WHERE time > ${ time }s \
+														WHERE time > ${ from_time }s AND time < ${ to_time }s \
 														GROUP BY time(${distinctTime}m) \
 														ORDER ASC; ",
-														{ sen_1: param.ylabel,
-														  sen_2: paramRelated.ylabel,
-														  ip: ip(eq.address),
-														  param_main: param.name,
+														{ sen_1:         param.ylabel,
+														  sen_2:         paramRelated.ylabel,
+														  ip:            ip(eq.address),
+														  param_main:    param.name,
 														  param_related: param.related,
-														  time: from,
-														  distinctTime: distinctTime
+														  from_time:     from,
+														  to_time:       to,
+														  distinctTime:  distinctTime
 														});
 						}
 					});

@@ -81,7 +81,7 @@
                 </td>
                 <td data-bind="text: moment(rack.updatedAt).format('HH:mm:SS DD.MM.YYYY');"></td>
                 <td>
-                    <button class="ui small red right floated button"><%= __('Delete') %></button>
+                    <button data-bind="event: {click: $root.rackDelete.bind($data)}" class="ui small red right floated button"><%= __('Delete') %></button>
                     <button data-bind="event: {click: $root.rackForm.bind(false, $index())}" class="ui small primary right floated button"><%= __('Edit') %></button>
                 </td>
             </tr>
@@ -152,7 +152,7 @@
                 </td>
                 <td data-bind="text: moment(eq.updatedAt).format('HH:mm:SS DD.MM.YYYY');"></td>
                 <td>
-                    <button class="ui small red right floated button"><%= __('Delete') %></button>
+                    <button data-bind="event: {click: $root.eqDelete.bind($data)}" class="ui small red right floated button"><%= __('Delete') %></button>
                     <button data-bind="event: {click: $root.eqForm.bind(false, $index())}" class="ui small primary right floated button"><%= __('Edit') %></button>
                 </td>
             </tr>
@@ -472,9 +472,27 @@
                             if (url == 'datacenter'){
                                 self.dcs.push(ko.observable(data));
                             } else if (url == 'rackmount'){
-                                self.racks.push(ko.observable(data));
+                                io.socket.get('/rackmount/' + data.id + '?populate=[datacenter]', function(data, jwr){
+                                    if (jwr.statusCode == 200){
+                                        if (data.datacenter === undefined){
+                                            data.datacenter = [];
+                                        }
+                                        self.racks.push(ko.observable(data));
+                                    } else {
+                                        self.errors.push('ERROR: ' + jwr.statusCode);
+                                    }
+                                });
                             } else if (url == 'equipment'){
-                                self.equipments.push(ko.observable(data));
+                                io.socket.get('/equipment/' + data.id + '?populate=[rackmount]', function(data, jwr){
+                                    if (jwr.statusCode == 200){
+                                        if (data.rackmount === undefined){
+                                            data.rackmount = [];
+                                        }
+                                        self.equipments.push(ko.observable(data));
+                                    } else {
+                                        self.errors.push('ERROR: ' + jwr.statusCode);
+                                    }
+                                });
                             }
 
                             $('#eqModal').modal('hide');
@@ -520,6 +538,32 @@
 
         }.bind(this);
 
+        this.rackDelete = function(rack){
+            var self = this;
+
+            io.socket.delete('/rackmount', {'id': rack.id}, function(data, jwr){
+                if (jwr.statusCode == 200){
+                    self.racks.remove(function(item){ return item().id == rack.id; });
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+        }.bind(this);
+
+        this.eqDelete = function(eq){
+            var self = this;
+
+            io.socket.delete('/equipment', {'id': eq.id}, function(data, jwr){
+                if (jwr.statusCode == 200){
+                    self.equipments.remove(function(item){ return item().id == eq.id; });
+                } else {
+                    self.errors.push('ERROR: ' + jwr.statusCode);
+                }
+            });
+
+        }.bind(this);
+
         /**
          * Loading data and save to observableArrays
          */
@@ -527,7 +571,7 @@
             var self = this;
             var dcQuery = {sort: 'name'};
 
-            io.socket.get('/datacenter', dcQuery, function(data, jwr){
+            io.socket.get('/datacenter?populate=[]', dcQuery, function(data, jwr){
                 if (jwr.statusCode == 200){
                     var dcs = [];
 
@@ -547,8 +591,7 @@
 
             var rackQuery = {sort: 'datacenter'};
 
-            io.socket.get('/rackmount', rackQuery, function(data, jwr){
-                //console.log(data);
+            io.socket.get('/rackmount?populate=[datacenter]', rackQuery, function(data, jwr){
                 if (jwr.statusCode == 200){
                     var racks = [];
 
