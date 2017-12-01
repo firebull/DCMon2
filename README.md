@@ -10,6 +10,8 @@ Why do I want to make one more monitoring utility? Well, in fact there is no any
 
 Client side is written using Knockout.js to render data recieved from server by Websockets events. Interface is fast, lightweight and simple, created with Semantic-UI.
 
+You can watch the video of working system on [YouTube](https://youtu.be/BzZPdpnv_Y0).
+
 ## Install
 
 Instruction is for Debian. You can use Linux distribution of your own.
