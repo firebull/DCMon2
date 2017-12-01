@@ -1,7 +1,7 @@
 {
   "name": "DCMonitor2",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Monitor different equipment by IPMI, iLo or SNMP",
   "keywords": [
     "IPMI",
@@ -10,7 +10,7 @@
   ],
   "dependencies": {
     "change-case": "*",
-    "ejs": "~0.8.4",
+    "ejs": "~2.5.7",
     "elasticsearch": "*",
     "grunt": "0.4.2",
     "grunt-contrib-clean": "~0.5.0",
